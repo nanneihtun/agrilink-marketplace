@@ -330,6 +330,10 @@ export const useAuth = () => {
           console.log('🌐 Backend available - checking Supabase session');
           
           try {
+            if (!supabase) {
+              console.log('🎯 Supabase client not available, skipping session check');
+              throw new Error('Supabase not configured');
+            }
             const { data: { session }, error: sessionError } = await supabase.auth.getSession()
             
             if (sessionError) {

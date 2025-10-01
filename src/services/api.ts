@@ -12,6 +12,10 @@ const getAuthHeaders = async () => {
   
   // Add user token if available
   try {
+    if (!supabase) {
+      console.log('🎯 Supabase client not available, using anon key');
+      return headers
+    }
     const { data: { session }, error } = await supabase.auth.getSession()
     if (error) {
       console.log('Session error:', error)

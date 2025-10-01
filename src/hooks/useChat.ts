@@ -73,6 +73,15 @@ export const useChat = (userId?: string) => {
       
       // Check authentication before making API calls (but don't be too strict)
       const { supabase } = await import('../lib/supabase')
+      if (!supabase) {
+        console.log('🎯 Supabase client not available, using localStorage fallback');
+        const storedConversations = localStorage.getItem('agriconnect-myanmar-conversations')
+        if (storedConversations) {
+          setConversations(JSON.parse(storedConversations))
+        }
+        setLoading(false)
+        return
+      }
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
       if (sessionError) {
