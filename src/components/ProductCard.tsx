@@ -279,14 +279,23 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
               Chat
             </Button>
             {currentUserType === 'buyer' && onMakeOffer && (
-              <Button 
-                size="sm" 
-                className="flex-1 h-9 bg-green-600 hover:bg-green-700"
-                onClick={() => onMakeOffer(product)}
-              >
-                <DollarSign className="w-4 h-4 mr-2" />
-                Make Offer
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 h-9 bg-green-600 hover:bg-green-700"
+                      onClick={() => onMakeOffer(product)}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Make Initial Offer
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Start negotiations with this seller</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </>
         )}

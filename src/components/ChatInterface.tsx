@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Send, MapPin, Star, Shield, AlertTriangle, CheckCircle, Clock, User, X, Package, Handshake } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
 import { AccountTypeBadge, getUserVerificationLevel } from "./UserBadgeSystem";
@@ -521,15 +522,24 @@ export function ChatInterface({
           </div>
           <div className="flex gap-2">
             {canCreateOffer && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowCreateOffer(true)}
-                className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Package className="w-4 h-4 mr-1" />
-                Offer
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowCreateOffer(true)}
+                      className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      <Handshake className="w-4 h-4 mr-1" />
+                      Counter-Offer
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Make a counter-offer or negotiate price</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             <Button variant="outline" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
