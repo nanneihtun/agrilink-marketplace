@@ -511,6 +511,27 @@ export default function App() {
 
   // Initialize app - Supabase backend handles all data
   useEffect(() => {
+    // Clean up old local storage data from testing
+    const oldStorageKeys = [
+      'agriconnect-myanmar-users',
+      'agriconnect-myanmar-local-products',
+      'agriconnect-myanmar-user-products',
+      'agriconnect-myanmar-saved-products',
+      'agriconnect-myanmar-current-user',
+      'agriconnect-myanmar-offers',
+      'agriconnect-myanmar-reviews',
+      'agriconnect-myanmar-conversations',
+      'agriconnect-myanmar-messages',
+      'agriconnect-myanmar-hidden-sample-products'
+    ];
+    
+    oldStorageKeys.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log('🧹 Cleaned up old storage:', key);
+      }
+    });
+    
     // Check for email confirmation success
     const urlParams = new URLSearchParams(window.location.search);
     const emailConfirmed = urlParams.get('email_confirmed');
