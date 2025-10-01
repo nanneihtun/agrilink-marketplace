@@ -87,10 +87,13 @@ export function CreateOfferModal({
       productName: product.name
     });
 
-    const validUntil = new Date();
-    validUntil.setDate(validUntil.getDate() + parseInt(validityDays));
+    // Calculate valid until date safely
+    const currentDate = new Date();
+    const daysToAdd = parseInt(validityDays) || 3; // Default to 3 days if invalid
+    const validUntil = new Date(currentDate.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
 
-    const offer: Omit<Offer, "id" | "createdAt" | "acceptedAt" | "completedAt"> = {
+    try {
+      const offer: Omit<Offer, "id" | "createdAt" | "acceptedAt" | "completedAt"> = {
       productId: product.id,
       productName: product.name,
       sellerId,
@@ -108,11 +111,15 @@ export function CreateOfferModal({
       notes: notes.trim() || undefined
     };
 
-    console.log('✅ CreateOfferModal - Final offer object:', offer);
+      console.log('✅ CreateOfferModal - Final offer object:', offer);
 
-    onCreateOffer(offer);
-    toast.success("Formal offer sent successfully!");
-    onClose();
+      onCreateOffer(offer);
+      toast.success("Formal offer sent successfully!");
+      onClose();
+    } catch (error) {
+      console.error('❌ Error creating offer:', error);
+      toast.error("Failed to create offer. Please try again.");
+    }
   };
 
   const handleClose = () => {
