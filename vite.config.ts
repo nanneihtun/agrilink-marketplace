@@ -53,6 +53,17 @@
     build: {
       target: 'esnext',
       outDir: 'build',
+      chunkSizeWarningLimit: 1000, // Increase limit to 1MB
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
+            charts: ['recharts'],
+            forms: ['react-hook-form'],
+          },
+        },
+      },
     },
     server: {
       port: 3000,
