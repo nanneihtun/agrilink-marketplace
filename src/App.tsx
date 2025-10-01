@@ -167,7 +167,7 @@ export default function App() {
 
       const demoUsers = [
         {
-          id: `admin-${Date.now()}`,
+          id: `admin-${(() => Date.now())()}`,
           email: 'admin@agrilink.com',
           password: 'admin123',
           name: 'System Administrator',
@@ -183,7 +183,7 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: [],
           farmingMethods: [],
-          joinedDate: new Date().toISOString(),
+          joinedDate: (() => new Date().toISOString())(),
           rating: 5.0,
           totalReviews: 0
         },
@@ -205,7 +205,7 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: ['Organic Certified'],
           farmingMethods: ['Traditional', 'Sustainable'],
-          joinedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
+          joinedDate: (() => new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())(),
           rating: 4.8,
           totalReviews: 24
         },
@@ -226,7 +226,7 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: ['Organic Certified'],
           farmingMethods: ['Organic', 'Hydroponic'],
-          joinedDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+          joinedDate: (() => new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString())(),
           rating: 4.7,
           totalReviews: 31
         },
@@ -247,7 +247,7 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: ['Licensed Trader', 'Export Certified'],
           farmingMethods: [],
-          joinedDate: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString(),
+          joinedDate: (() => new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString())(),
           rating: 4.6,
           totalReviews: 18
         },
@@ -268,13 +268,13 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: ['Export Quality'],
           farmingMethods: ['Controlled Environment', 'Sustainable'],
-          joinedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+          joinedDate: (() => new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString())(),
           rating: 4.9,
           totalReviews: 42
         },
         // Test buyer account
         {
-          id: `buyer-${Date.now()}`,
+          id: `buyer-${(() => Date.now())()}`,
           email: 'buyer.test@gmail.com',
           password: 'buyer123',
           name: 'Ma Phyu Phyu',
@@ -290,7 +290,7 @@ export default function App() {
           phoneVerified: true,
           qualityCertifications: [],
           farmingMethods: [],
-          joinedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          joinedDate: (() => new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())(),
           rating: 0,
           totalReviews: 0,
           preferences: {
@@ -635,7 +635,7 @@ export default function App() {
     try {
       // Test localStorage write/read to ensure it's working
       const testKey = "agriconnect-test-write";
-      const testValue = "test-" + Date.now();
+      const testValue = "test-" + (() => Date.now())();
       localStorage.setItem(testKey, testValue);
       const readValue = localStorage.getItem(testKey);
       localStorage.removeItem(testKey);
@@ -842,7 +842,7 @@ export default function App() {
         // Add to saved products
         const newSavedProduct = {
           productId,
-          savedDate: new Date().toISOString(),
+          savedDate: (() => new Date().toISOString())(),
           priceWhenSaved: currentPrice,
           alerts: {
             priceAlert: true, // Default to true for price transparency
@@ -879,13 +879,13 @@ export default function App() {
       // In a real app, this would save to Supabase
       // For now, we'll simulate it with localStorage
       const newOffer = {
-        id: `offer-${Date.now()}`,
+        id: `offer-${(() => Date.now())()}`,
         productId: selectedProductForOffer.id,
         buyerId: currentUser.id,
         sellerId: selectedProductForOffer.sellerId,
         ...offerData,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        createdAt: (() => new Date().toISOString())()
       };
       
       // Store in localStorage for demo
@@ -909,12 +909,12 @@ export default function App() {
     try {
       // In a real app, this would save to Supabase
       const newReview = {
-        id: `review-${Date.now()}`,
+        id: `review-${(() => Date.now())()}`,
         reviewerId: currentUser.id,
         revieweeId: selectedTransactionForReview.otherPartyId,
         productId: selectedTransactionForReview.productId,
         ...reviewData,
-        createdAt: new Date().toISOString()
+        createdAt: (() => new Date().toISOString())()
       };
       
       // Store in localStorage for demo

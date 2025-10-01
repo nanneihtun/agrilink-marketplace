@@ -52,7 +52,7 @@ export const products: Product[] = [
     description: 'Premium quality jasmine rice grown using traditional farming methods in Bago Region. Each grain is carefully selected for exceptional aroma and taste. Our rice is perfect for restaurants, hotels, and wholesale buyers looking for consistent quality and authentic Myanmar jasmine rice.',
     additionalNotes: 'Harvest date: January 2024. Storage in controlled environment.',
     priceChange: -2.1, // Price decreased by 2.1% (favorable for buyers)
-    lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    lastUpdated: (() => new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString())(), // 2 days ago
   },
   {
     id: 'sample-vegetables-001',
@@ -78,7 +78,7 @@ export const products: Product[] = [
     description: 'Fresh, vine-ripened tomatoes harvested daily from our organic farm. Perfect for markets, restaurants, and food processing. Rich color and excellent taste.',
     additionalNotes: 'Harvested fresh every morning. Best consumed within 5 days.',
     priceChange: 1.5, // Price increased by 1.5% (seasonal variation)
-    lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    lastUpdated: (() => new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString())(), // 1 day ago
   },
   {
     id: 'sample-spices-001',
@@ -104,7 +104,7 @@ export const products: Product[] = [
     description: 'High-quality turmeric powder sourced from trusted farmers in Sagaing Region. Finely ground, vibrant color, and strong aroma. Perfect for cooking and export.',
     additionalNotes: 'Processed and packaged in clean facility. 18-month shelf life.',
     priceChange: -0.8, // Price slightly decreased (market competition)
-    lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    lastUpdated: (() => new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())(), // 3 days ago
   },
   {
     id: 'sample-fruits-001', 
@@ -129,6 +129,6 @@ export const products: Product[] = [
     category: 'fruits',
     description: 'Sweet and fresh dragon fruit grown in controlled environment. Perfect size and ripeness for retail and wholesale. High nutrition value and exotic taste.',
     additionalNotes: 'Harvest twice weekly. Best consumed within 7 days. Export quality.',
-    lastUpdated: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+    lastUpdated: (() => new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString())(), // 5 hours ago
   }
 ];
