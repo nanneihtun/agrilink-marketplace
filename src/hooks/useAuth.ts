@@ -320,9 +320,7 @@ export const useAuth = () => {
   // Enhanced authentication restoration with better error handling
   useEffect(() => {
     const checkSession = async () => {
-      console.log('🎯 DEMO MODE ACTIVATED: Backend disabled, using local demo data');
-      console.log('🎯 LOCAL MODE ACTIVATED: Backend disabled, using local storage');
-      console.log('🎯 Backend not available, using local mode');
+      // Check if backend is available
 
       try {
         if (backendAvailable) {
