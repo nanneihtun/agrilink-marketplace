@@ -1280,7 +1280,6 @@ export default function App() {
                               ? handleSaveProduct
                               : undefined
                           }
-                          onMakeOffer={handleMakeOffer}
                           currentUserId={currentUser?.id}
                           currentUserType={currentUser?.userType}
                           sellerVerified={

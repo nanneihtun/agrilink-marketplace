@@ -531,12 +531,12 @@ export function ChatInterface({
                       onClick={() => setShowCreateOffer(true)}
                       className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                     >
-                      <Handshake className="w-4 h-4 mr-1" />
-                      Counter-Offer
+                <Handshake className="w-4 h-4 mr-1" />
+                Make Offer
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Make a counter-offer or negotiate price</p>
+                    <p>Make an offer or negotiate price with this seller</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
