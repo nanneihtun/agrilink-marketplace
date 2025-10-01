@@ -151,25 +151,24 @@ export default function App() {
   // Preview mode state for storefront
   const [storefrontPreviewMode, setStorefrontPreviewMode] = useState(false);
 
-  // Clear any existing demo accounts and products on app start
+  // Initialize app - clear demo data once
   useEffect(() => {
     try {
       // Clear demo accounts
       const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
       const demoEmails = ['admin@agrilink.com', 'thura.farmer@gmail.com', 'kyaw.trader@gmail.com', 'su.buyer@gmail.com', 'buyer.test@gmail.com'];
       
-      // Remove any demo accounts
       const filteredUsers = users.filter((user: any) => !demoEmails.includes(user.email));
       
       if (filteredUsers.length !== users.length) {
         localStorage.setItem('agriconnect-myanmar-users', JSON.stringify(filteredUsers));
-        console.log('🧹 Removed demo accounts from localStorage');
+        console.log('🧹 Removed demo accounts');
       }
 
-      // Clear all existing products
+      // Clear existing products
       localStorage.removeItem('agriconnect-myanmar-local-products');
       localStorage.removeItem('agriconnect-myanmar-user-products');
-      console.log('🧹 Cleared all existing products from localStorage');
+      console.log('🧹 Cleared existing products');
     } catch (error) {
       console.error('Error clearing demo data:', error);
     }
