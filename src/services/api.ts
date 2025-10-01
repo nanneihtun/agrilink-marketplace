@@ -1,34 +1,14 @@
 import { supabase } from '../lib/supabase'
-import ENV from '../config/env'
 
-const API_BASE = `${ENV.SUPABASE_URL}/functions/v1/make-server-aa5728d5`
-
-// Helper to get auth headers
-const getAuthHeaders = async () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${ENV.SUPABASE_ANON_KEY}`
+// Helper to check if Supabase is available
+const checkSupabase = () => {
+  if (!supabase) {
+    throw new Error('Supabase client not available')
   }
-  
-  // Add user token if available
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession()
-    if (error) {
-      console.log('Session error:', error)
-      return headers
-    }
-    
-    if (session?.access_token) {
-      headers.Authorization = `Bearer ${session.access_token}`
-    }
-  } catch (error) {
-    console.log('Error getting session for headers:', error)
-  }
-  
-  return headers
+  return supabase
 }
 
-// Authentication API
+// Authentication API - using direct Supabase calls
 export const authAPI = {
   signUp: async (userData: {
     email: string
@@ -44,19 +24,53 @@ export const authAPI = {
     farmingMethods?: string[]
   }) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/signup`, {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify(userData)
+      const supabaseClient = checkSupabase()
+      
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email: userData.email,
+        password: userData.password
       })
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Signup failed')
+      if (authError) {
+        throw authError
       }
       
-      return result
+      if (!authData.user) {
+        throw new Error('User creation failed')
+      }
+      
+      // Create user profile in users table
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: userData.email,
+          name: userData.name,
+          user_type: userData.userType,
+          location: userData.location,
+          phone: userData.phone,
+          business_name: userData.businessName,
+          business_description: userData.businessDescription,
+          experience: userData.experience,
+          quality_certifications: userData.qualityCertifications,
+          farming_methods: userData.farmingMethods,
+          verified: false,
+          phone_verified: false,
+          rating: 0,
+          total_reviews: 0
+        })
+        .select()
+        .single()
+      
+      if (profileError) {
+        throw profileError
+      }
+      
+      return {
+        user: profileData,
+        session: authData.session
+      }
     } catch (error) {
       console.error('Signup API error:', error)
       throw error
@@ -65,19 +79,18 @@ export const authAPI = {
 
   signIn: async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_BASE}/auth/signin`, {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify({ email, password })
+      const supabaseClient = checkSupabase()
+      
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
       })
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Sign in failed')
+      if (error) {
+        throw error
       }
       
-      return result
+      return data
     } catch (error) {
       console.error('Sign in API error:', error)
       throw error
@@ -86,361 +99,335 @@ export const authAPI = {
 
   signOut: async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      const supabaseClient = checkSupabase()
+      
+      const { error } = await supabaseClient.auth.signOut()
+      
+      if (error) {
+        throw error
+      }
+      
+      return { success: true }
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Sign out API error:', error)
       throw error
     }
   },
 
-  getCurrentSession: async () => {
+  getCurrentUser: async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) throw error
-      return session
+      const supabaseClient = checkSupabase()
+      
+      const { data: { session }, error } = await supabaseClient.auth.getSession()
+      
+      if (error) {
+        throw error
+      }
+      
+      if (!session?.user) {
+        return null
+      }
+      
+      // Get user profile
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (profileError) {
+        throw profileError
+      }
+      
+      return {
+        user: profile,
+        session
+      }
     } catch (error) {
-      console.error('Get session error:', error)
+      console.error('Get current user API error:', error)
       throw error
     }
   }
 }
 
-// Products API
+// Products API - using direct Supabase calls
 export const productsAPI = {
   getAll: async () => {
     try {
-      const headers = await getAuthHeaders()
-      const response = await fetch(`${API_BASE}/products`, {
-        headers
-      })
+      const supabaseClient = checkSupabase()
       
-      const result = await response.json()
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select(`
+          *,
+          seller:users!products_seller_id_fkey(
+            id,
+            name,
+            business_name,
+            user_type,
+            verified,
+            rating,
+            total_reviews
+          )
+        `)
+        .order('created_at', { ascending: false })
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch products')
+      if (error) {
+        throw error
       }
       
-      return result.products
+      return data || []
     } catch (error) {
       console.error('Fetch products API error:', error)
       throw error
     }
   },
 
-  create: async (productData: {
-    name: string
-    description?: string
-    category: string
-    price: number
-    unit: string
-    quantity_available: string
-    location: string
-    images: string[]
-    variations: any[]
-  }) => {
+  create: async (productData: any) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
+      const supabaseClient = checkSupabase()
+      
+      const { data, error } = await supabaseClient
+        .from('products')
+        .insert(productData)
+        .select(`
+          *,
+          seller:users!products_seller_id_fkey(
+            id,
+            name,
+            business_name,
+            user_type,
+            verified,
+            rating,
+            total_reviews
+          )
+        `)
+        .single()
+      
+      if (error) {
+        throw error
       }
-
-      const response = await fetch(`${API_BASE}/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify(productData)
-      })
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create product')
-      }
-      
-      return result.product
+      return data
     } catch (error) {
       console.error('Create product API error:', error)
       throw error
     }
   },
 
-  update: async (productId: string, updates: any) => {
+  update: async (id: string, updates: any) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
+      const supabaseClient = checkSupabase()
+      
+      const { data, error } = await supabaseClient
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          seller:users!products_seller_id_fkey(
+            id,
+            name,
+            business_name,
+            user_type,
+            verified,
+            rating,
+            total_reviews
+          )
+        `)
+        .single()
+      
+      if (error) {
+        throw error
       }
-
-      const response = await fetch(`${API_BASE}/products/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify(updates)
-      })
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update product')
-      }
-      
-      return result.product
+      return data
     } catch (error) {
       console.error('Update product API error:', error)
       throw error
     }
   },
 
-  delete: async (productId: string) => {
+  delete: async (id: string) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch(`${API_BASE}/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        }
-      })
+      const supabaseClient = checkSupabase()
       
-      const result = await response.json()
+      const { error } = await supabaseClient
+        .from('products')
+        .delete()
+        .eq('id', id)
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to delete product')
+      if (error) {
+        throw error
       }
       
-      return result
+      return { success: true }
     } catch (error) {
       console.error('Delete product API error:', error)
       throw error
     }
   },
 
-  getUserProducts: async (userId: string) => {
+  getByUser: async (userId: string) => {
     try {
-      const headers = await getAuthHeaders()
-      const response = await fetch(`${API_BASE}/users/${userId}/products`, {
-        headers
-      })
+      const supabaseClient = checkSupabase()
       
-      const result = await response.json()
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select(`
+          *,
+          seller:users!products_seller_id_fkey(
+            id,
+            name,
+            business_name,
+            user_type,
+            verified,
+            rating,
+            total_reviews
+          )
+        `)
+        .eq('seller_id', userId)
+        .order('created_at', { ascending: false })
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch user products')
+      if (error) {
+        throw error
       }
       
-      return result.products
+      return data || []
     } catch (error) {
-      console.error('Fetch user products API error:', error)
+      console.error('Get user products API error:', error)
       throw error
     }
   }
 }
 
-// Profile API
-export const profileAPI = {
-  get: async () => {
+// Conversations API - using direct Supabase calls
+export const conversationsAPI = {
+  getAll: async () => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
+      const supabaseClient = checkSupabase()
+      
+      const { data, error } = await supabaseClient
+        .from('conversations')
+        .select(`
+          *,
+          buyer:users!conversations_buyer_id_fkey(id, name),
+          seller:users!conversations_seller_id_fkey(id, name),
+          product:products!conversations_product_id_fkey(id, name)
+        `)
+        .order('updated_at', { ascending: false })
+      
+      if (error) {
+        throw error
       }
-
-      const response = await fetch(`${API_BASE}/profile`, {
-        headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        }
-      })
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch profile')
-      }
-      
-      return result.profile
+      return data || []
     } catch (error) {
-      console.error('Fetch profile API error:', error)
+      console.error('Fetch conversations API error:', error)
       throw error
     }
   },
 
-  update: async (updates: any) => {
+  create: async (buyerId: string, sellerId: string, productId: string) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch(`${API_BASE}/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify(updates)
-      })
+      const supabaseClient = checkSupabase()
       
-      const result = await response.json()
+      const { data, error } = await supabaseClient
+        .from('conversations')
+        .insert({
+          buyer_id: buyerId,
+          seller_id: sellerId,
+          product_id: productId
+        })
+        .select()
+        .single()
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update profile')
+      if (error) {
+        throw error
       }
       
-      return result.profile
-    } catch (error) {
-      console.error('Update profile API error:', error)
-      throw error
-    }
-  }
-}
-
-// Conversations API
-export const conversationsAPI = {
-  create: async (sellerId: string, productId: string) => {
-    try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch(`${API_BASE}/conversations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify({ sellerId, productId })
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create conversation')
-      }
-      
-      return result.conversation
+      return data
     } catch (error) {
       console.error('Create conversation API error:', error)
       throw error
     }
-  },
-
-  getAll: async () => {
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session?.access_token) {
-        // Return empty array instead of throwing error for missing auth
-        console.log('No authenticated session for conversations fetch')
-        return []
-      }
-
-      const response = await fetch(`${API_BASE}/conversations`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        // Check if it's an auth error
-        if (response.status === 401 || response.status === 403) {
-          console.log('Authentication error fetching conversations')
-          return []
-        }
-        throw new Error(result.error || 'Failed to fetch conversations')
-      }
-      
-      return result.conversations || []
-    } catch (error) {
-      // Only log non-auth errors
-      if (!(error instanceof Error && error.message.includes('Not authenticated'))) {
-        console.error('Fetch conversations API error:', error)
-      }
-      return []
-    }
   }
 }
 
-// Messages API
+// Messages API - using direct Supabase calls
 export const messagesAPI = {
-  send: async (conversationId: string, content: string, messageType: string = 'text') => {
-    try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch(`${API_BASE}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify({ conversationId, content, messageType })
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to send message')
-      }
-      
-      return result.message
-    } catch (error) {
-      console.error('Send message API error:', error)
-      throw error
-    }
-  },
-
   getForConversation: async (conversationId: string) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
-        throw new Error('Not authenticated')
-      }
-
-      const response = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        }
-      })
+      const supabaseClient = checkSupabase()
       
-      const result = await response.json()
+      const { data, error } = await supabaseClient
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
       
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch messages')
+      if (error) {
+        throw error
       }
       
-      return result.messages
+      return data || []
     } catch (error) {
       console.error('Fetch messages API error:', error)
       throw error
     }
+  },
+
+  send: async (conversationId: string, content: string, messageType: string = 'text') => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      
+      if (!session?.user) {
+        throw new Error('User not authenticated')
+      }
+      
+      const { data, error } = await supabaseClient
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: session.user.id,
+          content,
+          type: messageType
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        throw error
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Send message API error:', error)
+      throw error
+    }
   }
 }
 
-// Real-time subscriptions (disabled for KV store implementation)
+// Real-time API - using Supabase real-time subscriptions
 export const realtimeAPI = {
-  subscribeToMessages: (conversationId: string, callback: (message: any) => void) => {
-    // Return a mock subscription for KV store implementation
-    return {
-      unsubscribe: () => console.log('Mock subscription unsubscribed')
-    }
-  },
-
-  subscribeToProducts: (callback: (product: any) => void) => {
-    // Return a mock subscription for KV store implementation
-    return {
-      unsubscribe: () => console.log('Mock subscription unsubscribed')
+  subscribeToMessages: (conversationId: string, callback: (payload: any) => void) => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      return supabaseClient
+        .channel(`messages:${conversationId}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        }, callback)
+        .subscribe()
+    } catch (error) {
+      console.error('Subscribe to messages API error:', error)
+      throw error
     }
   }
 }
