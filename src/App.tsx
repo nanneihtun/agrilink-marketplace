@@ -542,12 +542,16 @@ export default function App() {
       try {
         await signIn(email, password);
         setAuthModal(null);
+        // If user was on login page, redirect to marketplace after successful login
+        if (currentView === "login") {
+          setCurrentView("marketplace");
+        }
       } catch (error) {
         console.error("Login failed:", error);
         throw error;
       }
     },
-    [signIn],
+    [signIn, currentView, setCurrentView],
   );
 
   const handleRegister = useCallback(
@@ -555,12 +559,16 @@ export default function App() {
       try {
         await signUp(userData);
         setAuthModal(null);
+        // If user was on register page, redirect to marketplace after successful registration
+        if (currentView === "register") {
+          setCurrentView("marketplace");
+        }
       } catch (error) {
         console.error("Registration failed:", error);
         throw error;
       }
     },
-    [signUp],
+    [signUp, currentView, setCurrentView],
   );
 
   const handleLogout = useCallback(async () => {

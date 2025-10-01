@@ -77,15 +77,26 @@ export const useAuth = () => {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true)
     try {
+      console.log('🔐 Starting sign in process for:', email)
+      
       if (backendAvailable && supabase) {
+        console.log('🌐 Using Supabase backend for sign in')
+        
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         
-        if (error) throw error
+        if (error) {
+          console.error('❌ Supabase auth error:', error)
+          throw error
+        }
+        
+        console.log('✅ Supabase auth successful, data:', data)
         
         if (data.user) {
+          console.log('👤 Fetching user profile for:', data.user.id)
+          
           // Fetch user profile from backend
           const { data: profile, error: profileError } = await supabase
             .from('users')
@@ -93,7 +104,12 @@ export const useAuth = () => {
             .eq('id', data.user.id)
             .single()
           
-          if (profileError) throw profileError
+          if (profileError) {
+            console.error('❌ Profile fetch error:', profileError)
+            throw profileError
+          }
+          
+          console.log('✅ Profile fetched successfully:', profile)
           
           const user: User = {
             id: profile.id,
@@ -117,12 +133,17 @@ export const useAuth = () => {
             totalReviews: profile.total_reviews || 0
           }
           
+          console.log('👤 Setting user state:', user.email)
           setUser(user)
           setSession(data.session)
           localStorage.setItem('agriconnect-myanmar-current-user', JSON.stringify(user))
           console.log('✅ Backend sign in successful:', user.email)
+        } else {
+          console.error('❌ No user data returned from Supabase')
+          throw new Error('No user data returned')
         }
       } else {
+        console.log('🎯 Using local mode for sign in')
         // Local mode
         const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]')
         const foundUser = users.find((u: any) => u.email === email && u.password === password)
@@ -137,7 +158,7 @@ export const useAuth = () => {
         }
       }
     } catch (error) {
-      console.error('Sign in failed:', error)
+      console.error('❌ Sign in failed:', error)
       throw error
     } finally {
       setLoading(false)
