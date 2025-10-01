@@ -511,7 +511,19 @@ export default function App() {
 
   // Initialize app - Supabase backend handles all data
   useEffect(() => {
-    // App initialization complete
+    // Check for email confirmation success
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailConfirmed = urlParams.get('email_confirmed');
+    
+    if (emailConfirmed === 'true') {
+      toast.success("Email confirmed successfully! You can now sign in to your account.", {
+        duration: 6000,
+      });
+      
+      // Clean up URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }, []);
 
 
@@ -544,7 +556,7 @@ export default function App() {
         setAuthModal(null);
         
         // Show success message
-        toast.success("Login successful! Welcome back!");
+        toast.success("Login successful! Welcome to AgriLink Marketplace!");
         
         // If user was on login page, redirect to marketplace after successful login
         if (currentView === "login") {
@@ -561,15 +573,27 @@ export default function App() {
   const handleRegister = useCallback(
     async (userData: any) => {
       try {
-        await signUp(userData);
+        const result = await signUp(userData);
         setAuthModal(null);
         
-        // Show success message
-        toast.success("Registration successful! Please sign in to continue.");
-        
-        // If user was on register page, redirect to login page after successful registration
-        if (currentView === "register") {
-          setCurrentView("login");
+        // Check if email confirmation is required
+        if (result?.user && !result.user.email_confirmed_at) {
+          // Email confirmation required
+          toast.success("Registration successful! Please check your email and click the confirmation link to activate your account.", {
+            duration: 8000, // Show longer for important message
+          });
+          
+          // Redirect to login page with a special state
+          if (currentView === "register") {
+            setCurrentView("login");
+          }
+        } else {
+          // No email confirmation needed (if disabled in Supabase)
+          toast.success("Registration successful! You can now sign in.");
+          
+          if (currentView === "register") {
+            setCurrentView("login");
+          }
         }
       } catch (error) {
         console.error("Registration failed:", error);
