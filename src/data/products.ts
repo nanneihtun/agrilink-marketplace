@@ -30,7 +30,7 @@ export interface Product {
 export const products: Product[] = [
   {
     id: 'sample-rice-001',
-    sellerId: 'farmer-thura-001',
+    sellerId: 'demo-farmer-001',
     name: 'Premium Jasmine Rice - 50kg',
     price: 45000,
     unit: '50 kg bag',
@@ -56,7 +56,7 @@ export const products: Product[] = [
   },
   {
     id: 'sample-vegetables-001',
-    sellerId: 'farmer-su-002',
+    sellerId: 'demo-farmer-002',
     name: 'Fresh Tomatoes - 25kg',
     price: 18000,
     unit: '25 kg crate',
@@ -82,7 +82,7 @@ export const products: Product[] = [
   },
   {
     id: 'sample-spices-001',
-    sellerId: 'trader-kyaw-003',
+    sellerId: 'demo-trader-001',
     name: 'Premium Turmeric Powder - 10kg',
     price: 25000,
     unit: '10 kg sack',
@@ -108,7 +108,7 @@ export const products: Product[] = [
   },
   {
     id: 'sample-fruits-001', 
-    sellerId: 'farmer-min-004',
+    sellerId: 'demo-farmer-003',
     name: 'Dragon Fruit - 20kg',
     price: 32000,
     unit: '20 kg box',
