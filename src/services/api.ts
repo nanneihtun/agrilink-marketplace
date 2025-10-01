@@ -412,6 +412,24 @@ export const messagesAPI = {
 
 // Real-time API - using Supabase real-time subscriptions
 export const realtimeAPI = {
+  subscribeToProducts: (callback: (payload: any) => void) => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      return supabaseClient
+        .channel('products')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'products'
+        }, callback)
+        .subscribe()
+    } catch (error) {
+      console.error('Subscribe to products API error:', error)
+      throw error
+    }
+  },
+
   subscribeToMessages: (conversationId: string, callback: (payload: any) => void) => {
     try {
       const supabaseClient = checkSupabase()
