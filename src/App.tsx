@@ -542,6 +542,10 @@ export default function App() {
       try {
         await signIn(email, password);
         setAuthModal(null);
+        
+        // Show success message
+        toast.success("Login successful! Welcome back!");
+        
         // If user was on login page, redirect to marketplace after successful login
         if (currentView === "login") {
           setCurrentView("marketplace");
@@ -559,9 +563,13 @@ export default function App() {
       try {
         await signUp(userData);
         setAuthModal(null);
-        // If user was on register page, redirect to marketplace after successful registration
+        
+        // Show success message
+        toast.success("Registration successful! Please sign in to continue.");
+        
+        // If user was on register page, redirect to login page after successful registration
         if (currentView === "register") {
-          setCurrentView("marketplace");
+          setCurrentView("login");
         }
       } catch (error) {
         console.error("Registration failed:", error);
