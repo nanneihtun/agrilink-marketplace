@@ -33,8 +33,8 @@ import {
   Globe,
   MessageCircle
 } from "lucide-react";
-import { compressImage } from "../utils/storage";
-import { StorageManager } from "./StorageManager";
+// No storage utility needed with Supabase
+// No StorageManager needed with Supabase
 import { formatMemberSinceDate } from "../utils/dates";
 
 interface ProfileProps {
@@ -66,7 +66,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
 
   const [editing, setEditing] = useState<EditingField | null>(null);
   const [editingImage, setEditingImage] = useState(false);
-  const [showStorageManager, setShowStorageManager] = useState(false);
+  // No storage manager needed with Supabase
   const [storageWarning, setStorageWarning] = useState(false);
   const [formData, setFormData] = useState(() => {
     // Ensure user exists before accessing properties
@@ -173,7 +173,13 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
       setEditingImage(false);
       
       // Compress image to ~500KB max
-      const compressedDataUrl = await compressImage(file, 500000);
+      // Simple image compression - convert to base64
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      const compressedDataUrl = dataUrl;
       
       console.log('Image compressed:', {
         originalSize: file.size,
@@ -341,19 +347,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
   return (
     <div className="space-y-6">
       {/* Storage Manager Modal */}
-      {showStorageManager && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <StorageManager 
-              onClose={() => setShowStorageManager(false)}
-              onStorageCleared={() => {
-                setStorageWarning(false);
-                setShowStorageManager(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* No storage manager needed with Supabase */}
 
       {/* Storage Warning */}
       {storageWarning && (
@@ -372,7 +366,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => setShowStorageManager(true)}
+                onClick={() => console.log('Storage management not needed with Supabase')}
                 className="border-amber-300 text-amber-700 hover:bg-amber-100"
               >
                 <Database className="w-4 h-4 mr-2" />

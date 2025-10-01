@@ -17,16 +17,10 @@ export const useProducts = () => {
       setError(null)
       
       if (!backendAvailable || !ENV.isSupabaseConfigured()) {
-        // Fallback to localStorage
-        const storedProducts = localStorage.getItem('agriconnect-myanmar-user-products')
-        if (storedProducts) {
-          const userProducts = JSON.parse(storedProducts)
-          setProducts(userProducts)
-        } else {
-          setProducts([])
-        }
-        setLoading(false)
-        return
+        console.log('❌ Backend not available - Supabase connection required for products');
+        setProducts([]);
+        setLoading(false);
+        return;
       }
       
       // Create timeout promise
@@ -112,21 +106,8 @@ export const useProducts = () => {
   const createProduct = useCallback(async (productData: Partial<Product>) => {
     try {
       if (!backendAvailable || !ENV.isSupabaseConfigured()) {
-        // Fallback to localStorage
-        const newProduct = {
-          id: `product-${Date.now()}`,
-          ...productData,
-          sellerId: productData.sellerId || 'current-user',
-          priceChange: 0,
-          lastUpdated: new Date().toLocaleDateString()
-        }
-        
-        const storedProducts = JSON.parse(localStorage.getItem('agriconnect-myanmar-user-products') || '[]')
-        const updatedProducts = [newProduct, ...storedProducts]
-        localStorage.setItem('agriconnect-myanmar-user-products', JSON.stringify(updatedProducts))
-        
-        setProducts(prev => [newProduct as Product, ...prev])
-        return newProduct as Product
+        console.log('❌ Backend not available - Supabase connection required for creating products');
+        throw new Error('Backend connection required');
       }
       
       const backendData = transformFrontendProduct(productData)

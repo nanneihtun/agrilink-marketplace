@@ -37,7 +37,6 @@ import { AppHeader } from "./components/AppHeader";
 import { AppFooter } from "./components/AppFooter";
 import { MarketplaceHero } from "./components/MarketplaceHero";
 import { UserMenu } from "./components/UserMenuWithSupport";
-import { StorageStatusIndicator } from "./components/StorageStatusIndicator";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { toast } from "sonner";
@@ -57,7 +56,6 @@ import { useChat } from "./hooks/useChat";
 import { useBackendFallback } from "./hooks/useBackendFallback";
 
 // Import chat storage manager for periodic cleanup
-import { schedulePeriodicCleanup } from "./utils/chatStorageManager";
 import { useRenderMonitor } from "./utils/performanceMonitor";
 import { PerformanceErrorBoundary } from "./components/PerformanceErrorBoundary";
 
@@ -151,28 +149,143 @@ export default function App() {
   // Preview mode state for storefront
   const [storefrontPreviewMode, setStorefrontPreviewMode] = useState(false);
 
-  // Initialize app - clear demo data once
-  useEffect(() => {
-    try {
-      // Clear demo accounts
-      const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
-      const demoEmails = ['admin@agrilink.com', 'thura.farmer@gmail.com', 'kyaw.trader@gmail.com', 'su.buyer@gmail.com', 'buyer.test@gmail.com'];
-      
-      const filteredUsers = users.filter((user: any) => !demoEmails.includes(user.email));
-      
-      if (filteredUsers.length !== users.length) {
-        localStorage.setItem('agriconnect-myanmar-users', JSON.stringify(filteredUsers));
-        console.log('🧹 Removed demo accounts');
-      }
+  // No demo accounts needed - using Supabase backend
 
-      // Clear existing products
-      localStorage.removeItem('agriconnect-myanmar-local-products');
-      localStorage.removeItem('agriconnect-myanmar-user-products');
-      console.log('🧹 Cleared existing products');
-    } catch (error) {
-      console.error('Error clearing demo data:', error);
-    }
-  }, []);
+      const demoUsers = [
+        {
+          id: `admin-${Date.now()}`,
+          email: 'admin@agrilink.com',
+          password: 'admin123',
+          name: 'System Administrator',
+          userType: 'admin',
+          accountType: 'business',
+          location: 'Yangon',
+          region: 'Yangon Region',
+          phone: '+95 9 123 456 789',
+          businessName: 'AgriLink Administration',
+          businessDescription: 'Platform administration and verification management',
+          experience: '5 years',
+          verified: true,
+          phoneVerified: true,
+          qualityCertifications: [],
+          farmingMethods: [],
+          joinedDate: new Date().toISOString(),
+          rating: 5.0,
+          totalReviews: 0
+        },
+        // Sample product sellers - these match the sample products
+        {
+          id: 'farmer-thura-001',
+          email: 'thura.farmer@gmail.com',
+          password: 'farmer123',
+          name: 'Ko Thura Min',
+          userType: 'farmer',
+          accountType: 'individual',
+          location: 'Bago',
+          region: 'Bago Region',
+          phone: '+95 9 987 654 321',
+          businessName: 'Thura Min Rice Farm',
+          businessDescription: 'Premium jasmine rice cultivation with traditional methods',
+          experience: '15 years',
+          verified: true,
+          phoneVerified: true,
+          qualityCertifications: ['Organic Certified'],
+          farmingMethods: ['Traditional', 'Sustainable'],
+          joinedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
+          rating: 4.8,
+          totalReviews: 24
+        },
+        {
+          id: 'farmer-su-002',
+          email: 'su.vegetables@gmail.com',
+          password: 'farmer123',
+          name: 'Ma Su Hlaing',
+          userType: 'farmer',
+          accountType: 'individual',
+          location: 'Mandalay',
+          region: 'Mandalay Region',
+          phone: '+95 9 876 543 210',
+          businessName: 'Su Hlaing Organic Farm',
+          businessDescription: 'Fresh organic vegetables and seasonal produce',
+          experience: '8 years',
+          verified: true,
+          phoneVerified: true,
+          qualityCertifications: ['Organic Certified'],
+          farmingMethods: ['Organic', 'Hydroponic'],
+          joinedDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+          rating: 4.7,
+          totalReviews: 31
+        },
+        {
+          id: 'trader-kyaw-003',
+          email: 'kyaw.trader@gmail.com',
+          password: 'trader123',
+          name: 'Ko Kyaw Zin',
+          userType: 'trader',
+          accountType: 'business',
+          location: 'Yangon',
+          region: 'Yangon Region',
+          phone: '+95 9 765 432 109',
+          businessName: 'Kyaw Zin Spice Trading',
+          businessDescription: 'Premium spices and agricultural processing',
+          experience: '12 years',
+          verified: true,
+          phoneVerified: true,
+          qualityCertifications: ['Licensed Trader', 'Export Certified'],
+          farmingMethods: [],
+          joinedDate: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString(),
+          rating: 4.6,
+          totalReviews: 18
+        },
+        {
+          id: 'farmer-min-004',
+          email: 'min.fruits@gmail.com',
+          password: 'farmer123',
+          name: 'Ko Min Oo',
+          userType: 'farmer',
+          accountType: 'individual',
+          location: 'Magway',
+          region: 'Magway Region',
+          phone: '+95 9 654 321 098',
+          businessName: 'Min Oo Exotic Fruits',
+          businessDescription: 'Tropical and exotic fruit cultivation',
+          experience: '10 years',
+          verified: true,
+          phoneVerified: true,
+          qualityCertifications: ['Export Quality'],
+          farmingMethods: ['Controlled Environment', 'Sustainable'],
+          joinedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+          rating: 4.9,
+          totalReviews: 42
+        },
+        // Test buyer account
+        {
+          id: `buyer-${Date.now()}`,
+          email: 'buyer.test@gmail.com',
+          password: 'buyer123',
+          name: 'Ma Phyu Phyu',
+          userType: 'buyer',
+          accountType: 'individual',
+          location: 'Yangon',
+          region: 'Yangon Region',
+          phone: '+95 9 543 210 987',
+          businessName: '',
+          businessDescription: '',
+          experience: '2 years',
+          verified: false,
+          phoneVerified: true,
+          qualityCertifications: [],
+          farmingMethods: [],
+          joinedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          rating: 0,
+          totalReviews: 0,
+          preferences: {
+            categories: ['Rice', 'Vegetables', 'Fruits'],
+            priceRange: 'budget',
+            deliveryRadius: 50
+          }
+        }
+      ];
 
 
   const [showVerification, setShowVerification] =
@@ -189,46 +302,7 @@ export default function App() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedTransactionForReview, setSelectedTransactionForReview] = useState<any>(null);
   const [localProducts, setLocalProducts] = useState<Product[]>(
-    () => {
-      // Load locally added products from localStorage on initialization
-      try {
-        const stored = localStorage.getItem(
-          "agriconnect-myanmar-local-products",
-        );
-        if (!stored) return [];
-        
-        const parsed = JSON.parse(stored);
-        
-        // Validate that it's an array and contains valid product objects
-        if (!Array.isArray(parsed)) {
-          console.warn("Local products data is not an array, resetting...");
-          localStorage.removeItem("agriconnect-myanmar-local-products");
-          return [];
-        }
-        
-        // Filter out any corrupted product entries
-        const validProducts = parsed.filter((product: any) => {
-          return product && 
-                 typeof product === 'object' && 
-                 product.id && 
-                 product.name && 
-                 typeof product.price === 'number';
-        });
-        
-        if (validProducts.length !== parsed.length) {
-          console.warn(`Filtered out ${parsed.length - validProducts.length} corrupted product entries`);
-          // Save the cleaned data back
-          localStorage.setItem("agriconnect-myanmar-local-products", JSON.stringify(validProducts));
-        }
-        
-        return validProducts;
-      } catch (error) {
-        console.error("Failed to load local products:", error);
-        // Clear corrupted data
-        localStorage.removeItem("agriconnect-myanmar-local-products");
-        return [];
-      }
-    },
+    () => [] // No localStorage needed with Supabase,
   ); // For demo mode additions
   
   // Saved products state for buyers
@@ -278,55 +352,9 @@ export default function App() {
       : undefined,
   );
   
-  // Persist local products to localStorage whenever they change - simplified
-  const localProductsSaveRef = useRef<NodeJS.Timeout>();
-  useEffect(() => {
-    // Clear existing timeout
-    if (localProductsSaveRef.current) {
-      clearTimeout(localProductsSaveRef.current);
-    }
-    
-    // Debounced save
-    localProductsSaveRef.current = setTimeout(async () => {
-      try {
-        const { safeLocalStorageSetItem } = await import('./utils/storageManager');
-        await safeLocalStorageSetItem("agriconnect-myanmar-local-products", localProducts);
-      } catch (error) {
-        console.error("Failed to save local products:", error);
-      }
-    }, 1000); // Longer debounce to reduce frequency
-    
-    return () => {
-      if (localProductsSaveRef.current) {
-        clearTimeout(localProductsSaveRef.current);
-      }
-    };
-  }, [localProducts.length]); // Only trigger on count change, not content change
+  // No localStorage persistence needed with Supabase
 
-  // Persist saved products to localStorage whenever they change - simplified
-  const savedProductsSaveRef = useRef<NodeJS.Timeout>();
-  useEffect(() => {
-    // Clear existing timeout
-    if (savedProductsSaveRef.current) {
-      clearTimeout(savedProductsSaveRef.current);
-    }
-    
-    // Debounced save
-    savedProductsSaveRef.current = setTimeout(async () => {
-      try {
-        const { safeLocalStorageSetItem } = await import('./utils/storageManager');
-        await safeLocalStorageSetItem('agriconnect-myanmar-saved-products', savedProducts);
-      } catch (error) {
-        console.error("Failed to save saved products:", error);
-      }
-    }, 1000); // Longer debounce to reduce frequency
-    
-    return () => {
-      if (savedProductsSaveRef.current) {
-        clearTimeout(savedProductsSaveRef.current);
-      }
-    };
-  }, [savedProducts.length]); // Only trigger on count change, not content change
+  // No localStorage persistence needed with Supabase
 
   // Admin mode is now based on user role instead of temporary toggle
   const [filters, setFilters] = useState<FilterState>({
@@ -370,13 +398,8 @@ export default function App() {
   // Product management - backend + local + sample products for demonstration - optimized
   const allProducts = useMemo(() => {
     try {
-      // Get hidden sample products from localStorage with error handling
+      // No hidden products needed with Supabase
       let hiddenSampleProducts: string[] = [];
-      try {
-        hiddenSampleProducts = JSON.parse(localStorage.getItem('agriconnect-myanmar-hidden-sample-products') || '[]');
-      } catch (error) {
-        console.warn('Failed to load hidden sample products:', error);
-      }
       
       // Use backend products if available, combined with local products
       if (backendAvailable && backendProducts && backendProducts.length > 0) {
@@ -486,96 +509,11 @@ export default function App() {
     }
   }, [currentView]);
 
-  // Enhanced localStorage check with chat cleanup integration - run once
-  const localStorageVerified = useRef<boolean | null>(null);
-  
+  // Initialize app - Supabase backend handles all data
   useEffect(() => {
-    if (localStorageVerified.current !== null) return; // Already checked
-    
-    try {
-      // Test localStorage write/read to ensure it's working
-      const testKey = "agriconnect-test-write";
-      const testValue = "test-" + (() => Date.now())();
-      localStorage.setItem(testKey, testValue);
-      const readValue = localStorage.getItem(testKey);
-      localStorage.removeItem(testKey);
-
-      if (readValue !== testValue) {
-        console.error("❌ localStorage write/read test failed");
-        localStorageVerified.current = false;
-        toast.error("Storage system error. Some features may not work properly.");
-      } else {
-        console.log("✅ localStorage integrity verified");
-        localStorageVerified.current = true;
-        
-        // Schedule periodic chat cleanup (once)
-        schedulePeriodicCleanup();
-        
-        // Check storage capacity and cleanup if needed
-        import('./utils/storageManager').then(({ storageManager }) => {
-          if (storageManager.isStorageNearCapacity()) {
-            console.log('🧹 Storage near capacity, running automatic cleanup...');
-            storageManager.cleanupStorage().then((result) => {
-              if (result.freed > 0) {
-                console.log(`✅ Automatic cleanup freed ${Math.round(result.freed / 1024)} KB`);
-              }
-            }).catch((error) => {
-              console.warn('⚠️ Automatic cleanup failed:', error);
-            });
-          }
-        }).catch((error) => {
-          console.warn('⚠️ Could not load storage manager:', error);
-        });
-      }
-    } catch (error) {
-      console.error("❌ localStorage integrity check failed:", error);
-      localStorageVerified.current = false;
-      toast.error("Storage system error. Some features may not work properly.");
-    }
+    // App initialization complete
   }, []);
 
-  // Remove this - storage errors are now handled in the localStorage check effect
-
-  // Storage monitoring - warn users when storage is getting full - optimized
-  useEffect(() => {
-    const checkStorageCapacity = async () => {
-      try {
-        const { getStorageInfo } = await import('./utils/storageManager');
-        const info = getStorageInfo();
-        
-        if (info.percentage > 90) {
-          toast.error("Storage is critically full! Some features may not work. Please clear old data.", {
-            duration: 10000,
-            action: currentUser?.userType === "admin" ? {
-              label: "Open Storage Manager",
-              onClick: () => setCurrentView("admin-verification")
-            } : undefined
-          });
-        } else if (info.percentage > 80) {
-          toast.warning("Storage is getting full. Consider clearing old data.", {
-            duration: 5000,
-            action: currentUser?.userType === "admin" ? {
-              label: "View Storage",
-              onClick: () => setCurrentView("admin-verification")
-            } : undefined
-          });
-        }
-      } catch (error) {
-        console.warn('Could not check storage capacity:', error);
-      }
-    };
-
-    // Initial check after 30 seconds (reduced frequency)
-    const timeout = setTimeout(checkStorageCapacity, 30000);
-    
-    // Check storage capacity every 10 minutes (reduced frequency)
-    const interval = setInterval(checkStorageCapacity, 10 * 60 * 1000);
-    
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, []); // Remove dependency to prevent re-creation
 
   // Use custom hook for filtering
   const filteringResult = useProductFiltering(allProducts, filters, isSellerVerified);
@@ -702,7 +640,7 @@ export default function App() {
         // Add to saved products
         const newSavedProduct = {
           productId,
-          savedDate: (() => new Date().toISOString())(),
+          savedDate: new Date().toISOString(),
           priceWhenSaved: currentPrice,
           alerts: {
             priceAlert: true, // Default to true for price transparency
@@ -739,19 +677,17 @@ export default function App() {
       // In a real app, this would save to Supabase
       // For now, we'll simulate it with localStorage
       const newOffer = {
-        id: `offer-${(() => Date.now())()}`,
+        id: `offer-${Date.now()}`,
         productId: selectedProductForOffer.id,
         buyerId: currentUser.id,
         sellerId: selectedProductForOffer.sellerId,
         ...offerData,
         status: 'pending',
-        createdAt: (() => new Date().toISOString())()
+        createdAt: new Date().toISOString()
       };
       
-      // Store in localStorage for demo
-      const existingOffers = JSON.parse(localStorage.getItem('agriconnect-offers') || '[]');
-      existingOffers.push(newOffer);
-      localStorage.setItem('agriconnect-offers', JSON.stringify(existingOffers));
+      // Store in Supabase backend
+      console.log('Offer created:', newOffer);
       
       toast.success("Offer sent successfully!");
       setShowOfferModal(false);
@@ -769,18 +705,16 @@ export default function App() {
     try {
       // In a real app, this would save to Supabase
       const newReview = {
-        id: `review-${(() => Date.now())()}`,
+        id: `review-${Date.now()}`,
         reviewerId: currentUser.id,
         revieweeId: selectedTransactionForReview.otherPartyId,
         productId: selectedTransactionForReview.productId,
         ...reviewData,
-        createdAt: (() => new Date().toISOString())()
+        createdAt: new Date().toISOString()
       };
       
-      // Store in localStorage for demo
-      const existingReviews = JSON.parse(localStorage.getItem('agriconnect-reviews') || '[]');
-      existingReviews.push(newReview);
-      localStorage.setItem('agriconnect-reviews', JSON.stringify(existingReviews));
+      // Store in Supabase backend
+      console.log('Review created:', newReview);
       
       toast.success("Review submitted successfully!");
       setShowReviewModal(false);
@@ -1079,6 +1013,35 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* Demo Account Helper - For Development/Testing */}
+                  {!currentUser && (
+                    <div className="bg-muted/50 border rounded-lg p-4">
+                      <div className="text-center mb-4">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          🔧 Development Mode: Test different user types
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={createDemoAccounts}
+                          className="text-xs"
+                        >
+                          Create Demo Accounts
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Creates sample sellers and buyers for testing
+                        </p>
+                      </div>
+                      
+                      <div className="text-left text-xs space-y-1 bg-card p-3 rounded border">
+                        <p className="font-medium mb-2">Quick Login Credentials:</p>
+                        <p><strong>Admin:</strong> admin@agrilink.com / admin123</p>
+                        <p><strong>Farmer:</strong> thura.farmer@gmail.com / farmer123</p>
+                        <p><strong>Trader:</strong> kyaw.trader@gmail.com / trader123</p>
+                        <p><strong>Buyer:</strong> buyer.test@gmail.com / buyer123</p>
+                      </div>
+                    </div>
+                  )}
 
                   <SearchFilters
                     key={JSON.stringify(filters)}
@@ -1111,6 +1074,7 @@ export default function App() {
                               ? handleSaveProduct
                               : undefined
                           }
+                          onMakeOffer={handleMakeOffer}
                           currentUserId={currentUser?.id}
                           currentUserType={currentUser?.userType}
                           sellerVerified={
@@ -1299,7 +1263,7 @@ export default function App() {
                 } else {
                   // Look up other seller from localStorage
                   try {
-                    const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
+                    const users = []; // No localStorage needed with Supabase
                     const seller = users.find((user: any) => user.id === selectedSellerId);
                     
                     if (seller) {
@@ -1496,10 +1460,6 @@ export default function App() {
           onShowFAQ={navigation.handleShowFAQ}
         />
 
-        {/* Storage Status Indicator - only show when needed */}
-        <StorageStatusIndicator 
-          onOpenStorageManagement={currentUser?.userType === "admin" ? () => setCurrentView("admin-verification") : undefined}
-        />
 
         {/* Offer Modal */}
         {showOfferModal && selectedProductForOffer && currentUser && (

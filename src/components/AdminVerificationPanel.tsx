@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-import { StorageMonitor } from "./StorageMonitor";
+// No StorageMonitor needed with Supabase
 import { StorageDebugPanel } from "./StorageDebugPanel";
 import { 
   CheckCircle, 
@@ -916,7 +916,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
         </TabsContent>
 
         <TabsContent value="storage" className="space-y-4">
-          <StorageMonitor />
+          {/* No StorageMonitor needed with Supabase */}
         </TabsContent>
 
         <TabsContent value="debug" className="space-y-4">

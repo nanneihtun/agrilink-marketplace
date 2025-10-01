@@ -20,12 +20,7 @@ export function useChatManagement({
 
   const handleChat = useCallback(
     async (productId: string) => {
-      console.log('🔍 handleChat called with productId:', productId);
-      console.log('🔍 currentUser:', currentUser);
-      console.log('🔍 allProducts length:', allProducts.length);
-      
       if (!currentUser) {
-        console.log('❌ No current user, showing login modal');
         setAuthModal("login");
         return;
       }
@@ -36,19 +31,12 @@ export function useChatManagement({
         const product = allProducts.find(
           (p) => p.id === productId,
         );
-        console.log('🔍 Found product:', product);
-        
         if (product) {
-          console.log('🔍 Starting conversation with seller:', product.sellerId);
           await startConversation(product.sellerId, productId);
-          console.log('🔍 Setting selected chat to:', productId);
           setSelectedChat(productId);
-        } else {
-          console.error('❌ Product not found:', productId);
-          toast.error("Product not found. Please try again.");
         }
       } catch (error) {
-        console.error("❌ Failed to start conversation:", error);
+        console.error("Failed to start conversation:", error);
         if (
           error instanceof Error &&
           !error.message.includes("Not authenticated")

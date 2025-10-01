@@ -4,9 +4,10 @@ import { UserBadge, PublicVerificationStatus, AccountTypeBadge, getUserVerificat
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { MapPin, MessageCircle, Store, Package, Shield, Clock, Trash2, CheckCircle, Camera, Sprout, Heart } from "lucide-react";
+import { MapPin, MessageCircle, Store, Package, Shield, Clock, Trash2, CheckCircle, Camera, Sprout, Heart, DollarSign } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getRelativeTime } from "../utils/dates";
+import { OfferModal } from "./OfferModal";
 
 import type { Product } from "../data/products";
 
@@ -17,6 +18,7 @@ interface ProductCardProps {
   onViewStorefront: (sellerId: string) => void;
   onDelete?: (productId: string) => void;
   onSaveProduct?: (productId: string, price: number) => void;
+  onMakeOffer?: (product: Product) => void;
   currentUserId?: string;
   currentUserType?: string;
   sellerVerified?: boolean;
@@ -67,7 +69,7 @@ function getDynamicSellerInfo(sellerId: string, currentUserId?: string, productL
   return null;
 }
 
-export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, onDelete, onSaveProduct, currentUserId, currentUserType, sellerVerified = false, sellerVerificationStatus, adminMode = false, savedProductIds = [] }: ProductCardProps) {
+export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, onDelete, onSaveProduct, onMakeOffer, currentUserId, currentUserType, sellerVerified = false, sellerVerificationStatus, adminMode = false, savedProductIds = [] }: ProductCardProps) {
   // Check if current user is the seller of this product
   const isOwnProduct = currentUserId && product.sellerId === currentUserId;
   
@@ -276,6 +278,16 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
               <MessageCircle className="w-4 h-4 mr-2" />
               Chat
             </Button>
+            {currentUserType === 'buyer' && onMakeOffer && (
+              <Button 
+                size="sm" 
+                className="flex-1 h-9 bg-green-600 hover:bg-green-700"
+                onClick={() => onMakeOffer(product)}
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                Make Offer
+              </Button>
+            )}
           </>
         )}
       </CardFooter>
