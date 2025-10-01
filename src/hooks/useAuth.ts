@@ -92,7 +92,7 @@ export const useAuth = () => {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true)
     try {
-      if (backendAvailable) {
+      if (backendAvailable && supabase) {
         // Backend mode
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -175,7 +175,7 @@ export const useAuth = () => {
   const signUp = useCallback(async (userData: any) => {
     setLoading(true)
     try {
-      if (backendAvailable) {
+      if (backendAvailable && supabase) {
         // Backend mode
         const { data, error } = await supabase.auth.signUp({
           email: userData.email,

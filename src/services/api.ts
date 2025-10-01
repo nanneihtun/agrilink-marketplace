@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase'
 import ENV from '../config/env'
 
-const API_BASE = `${ENV.SUPABASE_URL}/functions/v1/make-server-aa5728d5`
+// Use direct Supabase API calls instead of edge functions
+const API_BASE = ENV.SUPABASE_URL
 
 // Helper to get auth headers
 const getAuthHeaders = async () => {
@@ -114,18 +115,31 @@ export const authAPI = {
 export const productsAPI = {
   getAll: async () => {
     try {
-      const headers = await getAuthHeaders()
-      const response = await fetch(`${API_BASE}/products`, {
-        headers
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch products')
+      if (!supabase) {
+        throw new Error('Supabase client not available')
       }
       
-      return result.products
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          seller:users!products_seller_id_fkey(
+            id,
+            name,
+            business_name,
+            user_type,
+            verified,
+            rating,
+            total_reviews
+          )
+        `)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        throw error
+      }
+      
+      return data || []
     } catch (error) {
       console.error('Fetch products API error:', error)
       throw error
@@ -144,27 +158,37 @@ export const productsAPI = {
     variations: any[]
   }) => {
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.access_token) {
+      if (!supabase) {
+        throw new Error('Supabase client not available')
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
         throw new Error('Not authenticated')
       }
 
-      const response = await fetch(`${API_BASE}/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify(productData)
-      })
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          name: productData.name,
+          description: productData.description,
+          category: productData.category,
+          price: productData.price,
+          unit: productData.unit,
+          quantity_available: productData.quantity_available,
+          location: productData.location,
+          images: productData.images,
+          variations: productData.variations,
+          seller_id: session.user.id
+        })
+        .select()
+        .single()
       
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create product')
+      if (error) {
+        throw error
       }
       
-      return result.product
+      return data
     } catch (error) {
       console.error('Create product API error:', error)
       throw error

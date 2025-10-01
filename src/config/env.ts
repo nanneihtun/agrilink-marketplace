@@ -42,8 +42,10 @@ export const ENV = {
   
   // Check if Supabase is properly configured
   isSupabaseConfigured(): boolean {
-    // Enable Supabase backend
-    return !!(this.SUPABASE_URL && this.SUPABASE_ANON_KEY);
+    // Check if we have valid Supabase credentials
+    const hasUrl = this.SUPABASE_URL && this.SUPABASE_URL.includes('supabase.co');
+    const hasKey = this.SUPABASE_ANON_KEY && this.SUPABASE_ANON_KEY.length > 20;
+    return !!(hasUrl && hasKey);
   }
 }
 
