@@ -1,0 +1,291 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: #2A2A2A;
+  --card: #ffffff;
+  --card-foreground: #2A2A2A;
+  --popover: #ffffff;
+  --popover-foreground: #2A2A2A;
+  --primary: #A4835B;
+  --primary-foreground: #ffffff;
+  --secondary: #f8f8f8;
+  --secondary-foreground: #2A2A2A;
+  --muted: #f5f5f5;
+  --muted-foreground: #6B6B6B;
+  --accent: #A4835B;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e5e5;
+  --input: transparent;
+  --input-background: #fefefe;
+  --switch-background: #A4835B;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #A4835B;
+  --chart-1: #A4835B;
+  --chart-2: #8B7355;
+  --chart-3: #6B5B4F;
+  --chart-4: #9C7E5E;
+  --chart-5: #B8946F;
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2A2A2A;
+  --sidebar-primary: #A4835B;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f8f8f8;
+  --sidebar-accent-foreground: #2A2A2A;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #A4835B;
+}
+
+.dark {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+  --card: #2A2A2A;
+  --card-foreground: #ffffff;
+  --popover: #2A2A2A;
+  --popover-foreground: #ffffff;
+  --primary: #A4835B;
+  --primary-foreground: #ffffff;
+  --secondary: #3a3a3a;
+  --secondary-foreground: #ffffff;
+  --muted: #404040;
+  --muted-foreground: #a3a3a3;
+  --accent: #A4835B;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #404040;
+  --input: #2A2A2A;
+  --ring: #A4835B;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #A4835B;
+  --chart-2: #8B7355;
+  --chart-3: #6B5B4F;
+  --chart-4: #9C7E5E;
+  --chart-5: #B8946F;
+  --sidebar: #2A2A2A;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #A4835B;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #3a3a3a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #404040;
+  --sidebar-ring: #A4835B;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Form styling with brown accents - simplified */
+@layer base {
+  /* Target all form inputs except filter components */
+  input:not([class*="bg-background"]):not([class*="bg-white"]),
+  input[type="text"]:not([class*="bg-background"]):not([class*="bg-white"]),
+  input[type="email"]:not([class*="bg-background"]):not([class*="bg-white"]),
+  input[type="password"]:not([class*="bg-background"]):not([class*="bg-white"]),
+  input[type="number"]:not([class*="bg-background"]):not([class*="bg-white"]),
+  input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]),
+  textarea:not([class*="bg-background"]):not([class*="bg-white"]),
+  select:not([class*="bg-background"]):not([class*="bg-white"]) {
+    border: 1px solid rgba(164, 131, 91, 0.5) !important;
+    background-color: rgba(164, 131, 91, 0.06) !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  /* Focus states for form inputs */
+  input:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  input[type="text"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  input[type="email"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  input[type="password"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  input[type="number"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  textarea:not([class*="bg-background"]):not([class*="bg-white"]):focus,
+  select:not([class*="bg-background"]):not([class*="bg-white"]):focus {
+    border-color: rgba(164, 131, 91, 0.8) !important;
+    box-shadow: 0 0 0 2px rgba(164, 131, 91, 0.2) !important;
+    outline: none !important;
+  }
+  
+  /* ShadCN specific selectors */
+  .flex.h-10.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]),
+  .flex.h-9.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]),
+  [data-state]:not([class*="bg-background"]):not([class*="bg-white"]) {
+    border: 1px solid rgba(164, 131, 91, 0.5) !important;
+    background-color: rgba(164, 131, 91, 0.06) !important;
+  }
+  
+  /* Fix dropdown/select content transparency issues */
+  [role="listbox"],
+  [data-radix-popper-content-wrapper],
+  [data-radix-select-content] {
+    background-color: var(--background) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    z-index: 100 !important;
+  }
+  
+  /* Comprehensive Select dropdown styling with maximum specificity */
+  
+  /* Target all possible select item selectors */
+  [data-slot="select-item"],
+  [data-radix-select-item],
+  .relative.flex.w-full.cursor-default,
+  [role="option"] {
+    background-color: transparent !important;
+    color: var(--foreground) !important;
+    transition: all 0.15s ease-in-out !important;
+  }
+  
+  /* Hover and focus states with multiple selectors for maximum coverage */
+  [data-slot="select-item"]:hover,
+  [data-slot="select-item"]:focus,
+  [data-slot="select-item"][data-highlighted],
+  [data-slot="select-item"][data-state="checked"],
+  [data-radix-select-item]:hover,
+  [data-radix-select-item]:focus,
+  [data-radix-select-item][data-highlighted],
+  [data-radix-select-item][data-state="checked"],
+  .relative.flex.w-full.cursor-default:hover,
+  .relative.flex.w-full.cursor-default:focus,
+  .relative.flex.w-full.cursor-default[data-highlighted],
+  [role="option"]:hover,
+  [role="option"]:focus,
+  [role="option"][data-highlighted] {
+    background-color: rgba(164, 131, 91, 0.2) !important;
+    color: var(--foreground) !important;
+  }
+  
+  /* Force override Tailwind focus classes with even higher specificity */
+  div[data-slot="select-item"]:hover,
+  div[data-slot="select-item"]:focus,
+  div[data-slot="select-item"][data-highlighted] {
+    background-color: rgba(164, 131, 91, 0.2) !important;
+    color: var(--foreground) !important;
+  }
+  
+  /* Target the text content specifically */
+  [data-slot="select-item"]:hover *,
+  [data-slot="select-item"]:focus *,
+  [data-slot="select-item"][data-highlighted] *,
+  [data-radix-select-item]:hover *,
+  [data-radix-select-item]:focus *,
+  [data-radix-select-item][data-highlighted] * {
+    color: var(--foreground) !important;
+  }
+  
+
+}
+
+
