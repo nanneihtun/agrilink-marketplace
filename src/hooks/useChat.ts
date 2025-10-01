@@ -40,7 +40,6 @@ export const useChat = () => {
 
   const loadConversations = useCallback(async (userId: string) => {
     if (!backendAvailable) {
-      console.log('❌ Backend not available - Supabase connection required for chat');
       setConversations([]);
       setLoading(false);
       return;
@@ -104,7 +103,6 @@ export const useChat = () => {
 
   const loadMessages = useCallback(async (conversationId: string) => {
     if (!backendAvailable) {
-      console.log('❌ Backend not available - Supabase connection required for chat');
       setMessages(prev => ({ ...prev, [conversationId]: [] }));
       return;
     }
@@ -161,7 +159,6 @@ export const useChat = () => {
     offerDetails?: any
   ) => {
     if (!backendAvailable) {
-      console.log('❌ Backend not available - Supabase connection required for chat');
       return;
     }
 
@@ -230,7 +227,6 @@ export const useChat = () => {
     productId: string
   ) => {
     if (!backendAvailable) {
-      console.log('❌ Backend not available - Supabase connection required for chat');
       return null;
     }
 

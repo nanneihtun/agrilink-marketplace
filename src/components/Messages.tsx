@@ -210,17 +210,8 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   
   // Initialize debug logging once
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🎯 DEMO MODE ACTIVATED: Backend disabled, using local demo data');
-      console.log('🎯 LOCAL MODE ACTIVATED: Backend disabled, using local storage');
-      console.log('🎯 Backend not available, using local mode');
-      
-      if (effectiveCurrentUser) {
-        console.log('✅ Restored user session:', effectiveCurrentUser.email);
-        console.log('⏭️ Skipping Supabase auth listener - backend not available');
-      } else {
-        console.log('❌ No authenticated user found');
-      }
+    if (process.env.NODE_ENV === 'development' && effectiveCurrentUser) {
+      console.log('✅ Restored user session:', effectiveCurrentUser.email);
     }
   }, []); // Run once only
 

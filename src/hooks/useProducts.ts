@@ -17,7 +17,6 @@ export const useProducts = () => {
       setError(null)
       
       if (!backendAvailable || !ENV.isSupabaseConfigured()) {
-        console.log('❌ Backend not available - Supabase connection required for products');
         setProducts([]);
         setLoading(false);
         return;
@@ -106,7 +105,6 @@ export const useProducts = () => {
   const createProduct = useCallback(async (productData: Partial<Product>) => {
     try {
       if (!backendAvailable || !ENV.isSupabaseConfigured()) {
-        console.log('❌ Backend not available - Supabase connection required for creating products');
         throw new Error('Backend connection required');
       }
       
