@@ -1023,7 +1023,7 @@ export default function App() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={createDemoAccounts}
+                          onClick={() => console.log('Demo accounts not needed with Supabase')}
                           className="text-xs"
                         >
                           Create Demo Accounts
