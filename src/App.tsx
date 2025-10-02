@@ -42,9 +42,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 
-// Product type import and sample data for initial marketplace population
+// Product type import
 import type { Product } from "./data/products";
-import { products as sampleProducts } from "./data/products";
 import { generatePriceComparisonData } from "./utils/priceComparison";
 import {
   useProductFiltering,
@@ -54,9 +53,6 @@ import { useAuth } from "./hooks/useAuth";
 import { useProducts } from "./hooks/useProducts";
 import { useChat } from "./hooks/useChat";
 
-// Import chat storage manager for periodic cleanup
-import { useRenderMonitor } from "./utils/performanceMonitor";
-import { PerformanceErrorBoundary } from "./components/PerformanceErrorBoundary";
 
 // Optimized custom hooks
 import { useNavigation } from "./hooks/useNavigation";
@@ -184,9 +180,6 @@ if (typeof window !== "undefined") {
   const [selectedProductForOffer, setSelectedProductForOffer] = useState<Product | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedTransactionForReview, setSelectedTransactionForReview] = useState<any>(null);
-  const [localProducts, setLocalProducts] = useState<Product[]>(
-    () => [] // No localStorage needed with Supabase,
-  ); // For demo mode additions
   
   // Saved products state for buyers
   const [savedProducts, setSavedProducts] = useState<Array<{
@@ -218,7 +211,7 @@ if (typeof window !== "undefined") {
   } = useAuth();
   
   const {
-    products: backendProducts,
+    products,
     loading: productsLoading,
     createProduct,
     updateProduct,
@@ -276,33 +269,16 @@ if (typeof window !== "undefined") {
     };
   }, []);
 
-  // Product management - backend + local + sample products for demonstration - optimized
+  // Product management - use products from Supabase
   const allProducts = useMemo(() => {
     try {
-      // No hidden products needed with Supabase
-      let hiddenSampleProducts: string[] = [];
-      
-      // Use backend products if available, combined with local products
-      if (backendProducts.length > 0) {
-        return [...backendProducts, ...localProducts];
-      }
-      
-      // Fallback: combine sample products (minus hidden ones) with local products for initial demonstration
-      const visibleSampleProducts = sampleProducts.filter(product => 
-        !hiddenSampleProducts.includes(product.id)
-      );
-      
-      return [...visibleSampleProducts, ...localProducts];
+      return products || [];
     } catch (error) {
       console.error("Error in allProducts calculation:", error);
       setCriticalError("Failed to load products. Please refresh the page.");
       return [];
     }
-  }, [
-    backendProducts?.length, 
-    localProducts.length, // Simplified dependency
-    hiddenProductsVersion
-  ]);
+  }, [products]);
 
   // Initialize custom hooks with stable references
   const navigation = useNavigation({
@@ -319,9 +295,6 @@ if (typeof window !== "undefined") {
 
   const productManagement = useProductManagement({
     currentUser,
-    backendProducts,
-    localProducts,
-    setLocalProducts,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -331,6 +304,7 @@ if (typeof window !== "undefined") {
     setAuthModal,
     currentView,
     previousView,
+    allProducts,
   });
 
   // Only initialize chat management when user is properly loaded
@@ -666,8 +640,8 @@ if (typeof window !== "undefined") {
   }
 
   return (
-    <ErrorBoundary>
-      <PerformanceErrorBoundary>
+    <ErrorBoundary children={
+      <>
         <div className="min-h-screen bg-background flex flex-col">
         {/* Optimized Header Component */}
         <AppHeader
@@ -1363,7 +1337,8 @@ if (typeof window !== "undefined") {
         {/* Toast Notifications */}
         <Toaster position="top-right" />
         </div>
-      </PerformanceErrorBoundary>
-    </ErrorBoundary>
+      </>
+    }
+    />
   );
 }

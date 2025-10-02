@@ -4,10 +4,6 @@ import type { Product } from "../data/products";
 
 interface UseProductManagementProps {
   currentUser: any;
-  backendAvailable: boolean;
-  backendProducts: Product[];
-  localProducts: Product[];
-  setLocalProducts: (products: Product[] | ((prev: Product[]) => Product[])) => void;
   createProduct: (product: Product) => Promise<void>;
   updateProduct: (id: string, product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -17,14 +13,11 @@ interface UseProductManagementProps {
   setAuthModal: (modal: "login" | "register" | null) => void;
   currentView: string;
   previousView: string;
+  allProducts: Product[];
 }
 
 export function useProductManagement({
   currentUser,
-  backendAvailable,
-  backendProducts,
-  localProducts,
-  setLocalProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -34,6 +27,7 @@ export function useProductManagement({
   setAuthModal,
   currentView,
   previousView,
+  allProducts,
 }: UseProductManagementProps) {
 
   const handleAddListing = useCallback(
@@ -50,74 +44,28 @@ export function useProductManagement({
           totalSize: JSON.stringify(listing).length,
         });
 
-        // Always use backend when Supabase is available
-        if (backendAvailable) {
-          console.log("🌐 Backend mode: using Supabase API");
+        // Always use Supabase backend
+        console.log("🌐 Using Supabase API");
+        
+        // Clean up the editing flag before sending to backend
+        const cleanedListing = { ...listing };
+        delete cleanedListing.isEditing;
+        
+        if (listing.isEditing) {
+          console.log("✏️ Updating existing product via Supabase:", listing.id);
+          console.log("📝 Product update data:", {
+            id: listing.id,
+            name: listing.name,
+            price: listing.price,
+            location: listing.location
+          });
           
-          // Clean up the editing flag before sending to backend
-          const cleanedListing = { ...listing };
-          delete cleanedListing.isEditing;
-          
-          if (listing.isEditing) {
-            console.log("✏️ Updating existing product via Supabase:", listing.id);
-            console.log("📝 Product update data:", {
-              id: listing.id,
-              name: listing.name,
-              price: listing.price,
-              location: listing.location
-            });
-            
-            await updateProduct(listing.id, cleanedListing);
-            toast.success("Product updated successfully!");
-          } else {
-            console.log("➕ Creating new product via Supabase");
-            await createProduct(cleanedListing);
-            toast.success("Product added successfully!");
-          }
+          await updateProduct(listing.id, cleanedListing);
+          toast.success("Product updated successfully!");
         } else {
-          console.log("📱 Local mode: Supabase not available, handling locally");
-
-          // Local mode: handle in localStorage and state only when backend is not available
-          if (listing.isEditing) {
-            console.log("✏️ Updating existing product locally:", listing.id);
-            
-            // Clean up the editing flag before storing
-            const updatedProduct = { ...listing };
-            delete updatedProduct.isEditing;
-            
-            // Update in local products state
-            setLocalProducts((prev) =>
-              prev.map((p) => {
-                if (p.id === listing.id) {
-                  console.log("🔄 Replacing product:", p.id, "with new data");
-                  return updatedProduct;
-                }
-                return p;
-              })
-            );
-          } else {
-            console.log("➕ Adding new product locally");
-            
-            // Clean up any editing flags and create new product
-            const cleanedListing = { ...listing };
-            delete cleanedListing.isEditing;
-            
-            // Add new listing to local state with new ID
-            const newProduct = {
-              ...cleanedListing,
-              id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              lastUpdated: new Date().toISOString(),
-              sellerId: currentUser?.id || listing.sellerId,
-            };
-            setLocalProducts((prev) => [newProduct, ...prev]);
-            console.log("✅ Added new product:", newProduct.id);
-          }
-
-          toast.success(
-            listing.isEditing
-              ? "Product updated successfully!"
-              : "Product added successfully!"
-          );
+          console.log("➕ Creating new product via Supabase");
+          await createProduct(cleanedListing);
+          toast.success("Product added successfully!");
         }
 
         // Clear editing state and navigate back to where we came from
@@ -152,11 +100,8 @@ export function useProductManagement({
     [
       createProduct,
       updateProduct,
-      backendAvailable,
-      backendProducts,
       previousView,
       currentUser,
-      setLocalProducts,
       setEditingProduct,
       setCurrentView,
     ],
@@ -175,7 +120,7 @@ export function useProductManagement({
         return;
       }
 
-      // Find the product in allProducts (which includes local and backend products)
+      // Find the product in allProducts
       const productToEdit = allProducts.find((p) => p.id === product.id);
 
       if (!productToEdit) {
@@ -243,51 +188,17 @@ export function useProductManagement({
     async (productId: string) => {
       console.log("🗑️ Deleting product:", productId);
       try {
-        // Always use backend when Supabase is available
-        if (backendAvailable) {
-          console.log("🌐 Backend mode: deleting product via Supabase:", productId);
-          await deleteProduct(productId);
-          toast.success("Product deleted successfully");
-        } else {
-          console.log("📱 Local mode: Supabase not available, handling locally");
-          // Local mode: handle both local products and sample products
-          
-          // Check if it's a sample product (starts with 'sample-')
-          if (productId.startsWith('sample-')) {
-            console.log("🚫 Sample product detected - adding to deletion blacklist:", productId);
-            
-            // For sample products, we'll track them in localStorage to hide them
-            try {
-              const hiddenProducts = JSON.parse(localStorage.getItem('agriconnect-myanmar-hidden-sample-products') || '[]');
-              if (!hiddenProducts.includes(productId)) {
-                hiddenProducts.push(productId);
-                localStorage.setItem('agriconnect-myanmar-hidden-sample-products', JSON.stringify(hiddenProducts));
-                
-                // Trigger a custom event to notify other components
-                window.dispatchEvent(new Event('sample-products-changed'));
-              }
-              console.log("✅ Sample product hidden successfully:", productId);
-              toast.success("Sample product removed from display");
-            } catch (storageError) {
-              console.error("❌ Failed to hide sample product:", storageError);
-              toast.error("Failed to remove sample product - storage error");
-              return;
-            }
-          } else {
-            // For user-created products, remove from local products
-            console.log("📝 Removing user product from local products:", productId);
-            setLocalProducts((prev) => prev.filter((p) => p.id !== productId));
-            console.log("✅ User product deletion completed:", productId);
-            toast.success("Product deleted successfully");
-          }
-        }
+        // Always use Supabase backend
+        console.log("🌐 Deleting product via Supabase:", productId);
+        await deleteProduct(productId);
+        toast.success("Product deleted successfully");
       } catch (error) {
         console.error("❌ Delete product failed:", error);
         toast.error("Failed to delete product");
         throw error;
       }
     },
-    [deleteProduct, backendAvailable, backendProducts, setLocalProducts],
+    [deleteProduct],
   );
 
   const handleBackFromAddListing = useCallback(() => {
