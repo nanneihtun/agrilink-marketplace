@@ -167,18 +167,7 @@ export const productsAPI = {
       
       const { data, error } = await supabaseClient
         .from('products')
-        .select(`
-          *,
-          seller:users!products_seller_id_fkey(
-            id,
-            name,
-            business_name,
-            user_type,
-            verified,
-            rating,
-            total_reviews
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
       
       if (error) {

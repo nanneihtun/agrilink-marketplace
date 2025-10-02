@@ -76,8 +76,8 @@ export const useProducts = () => {
       price: Number(backendProduct.price),
       unit: backendProduct.unit,
       location: backendProduct.location,
-      sellerType: backendProduct.profiles?.user_type || 'farmer',
-      sellerName: backendProduct.profiles?.business_name || backendProduct.profiles?.name || 'Unknown Seller',
+      sellerType: 'farmer', // Will be populated from separate user query
+      sellerName: 'Loading...', // Will be populated from separate user query
       image: backendProduct.images?.[0] || 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b',
       quantity: backendProduct.quantity_available,
       priceChange: Math.floor(Math.random() * 20) - 10, // Random for demo
