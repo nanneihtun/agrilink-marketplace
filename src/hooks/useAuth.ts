@@ -82,13 +82,8 @@ export const useAuth = () => {
         phone: userData.phone,
         business_name: userData.businessName,
         business_description: userData.businessDescription,
-        experience: 'New to farming',
-        quality_certifications: [],
-        farming_methods: [],
         verified: false,
         phone_verified: false,
-        rating: 0,
-        total_reviews: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -188,10 +183,7 @@ export const useAuth = () => {
         businessName: profile.business_name,
         businessDescription: profile.business_description,
         experience: profile.experience,
-        qualityCertifications: profile.quality_certifications || [],
-        farmingMethods: profile.farming_methods || [],
         joinedDate: profile.created_at,
-        rating: profile.rating || 0,
         totalReviews: profile.total_reviews || 0
       };
 
