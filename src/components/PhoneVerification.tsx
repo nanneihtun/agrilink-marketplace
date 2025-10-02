@@ -109,18 +109,27 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
       }
 
       // Update user profile with phone verification
-      const { error: updateError } = await supabase
+      console.log('📱 Updating user profile with phone verification:', {
+        userId: currentUser.id,
+        phoneNumber: phoneNumber
+      });
+
+      const { data: updateData, error: updateError } = await supabase
         .from('users')
         .update({
           phone: phoneNumber,
           phone_verified: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', currentUser.id);
+        .eq('id', currentUser.id)
+        .select();
 
       if (updateError) {
-        throw updateError;
+        console.error('❌ Database update error:', updateError);
+        throw new Error(`Database update failed: ${updateError.message}`);
       }
+
+      console.log('✅ User profile updated successfully:', updateData);
 
       toast.success('Phone number verified successfully!');
       onVerificationComplete(phoneNumber);
