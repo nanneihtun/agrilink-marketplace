@@ -83,7 +83,7 @@ export function ChatInterface({
     }
   }, [passedCurrentUser?.id, effectiveCurrentUser?.id]);
   
-  const { messages, sendMessage, startConversation, fetchMessages } = useChat(effectiveCurrentUser?.id);
+  const { messages, sendMessage, startConversation, loadMessages } = useChat(effectiveCurrentUser?.id);
   const [newMessage, setNewMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
   
@@ -236,7 +236,7 @@ export function ChatInterface({
         console.log('✅ Chat already initialized:', conversationId);
         // Always fetch messages to ensure they're loaded
         try {
-          await fetchMessages(conversationId);
+          await loadMessages(conversationId);
         } catch (error) {
           console.error('❌ Failed to fetch messages for existing conversation:', error);
         }
