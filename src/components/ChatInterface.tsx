@@ -59,24 +59,14 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const { user: currentUser } = useAuth();
   
-  // Enhanced user resolution with fallback - more stable
+  // Use proper authentication from useAuth hook only
   const effectiveCurrentUser = useMemo(() => {
-    if (currentUser?.id) return currentUser;
-    
-    // Fallback: get from localStorage
-    try {
-      const storedCurrentUser = localStorage.getItem('agriconnect-myanmar-current-user');
-      if (storedCurrentUser) {
-        const user = JSON.parse(storedCurrentUser);
-        if (user?.id) {
-          console.log('🔄 ChatInterface using fallback user:', user.email || user.name);
-          return user;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to parse stored current user:', error);
+    if (currentUser?.id) {
+      console.log('✅ ChatInterface authenticated user:', currentUser.email || currentUser.name);
+      return currentUser;
     }
     
+    console.log('❌ ChatInterface: No authenticated user found');
     return null;
   }, [currentUser?.id]);
   
