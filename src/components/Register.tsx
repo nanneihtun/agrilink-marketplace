@@ -134,7 +134,7 @@ export function Register({ onRegister, onSwitchToLogin, onClose }: RegisterProps
       };
 
       await onRegister(userData);
-      onClose();
+      // Don't call onClose() - let handleRegister handle the redirect
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

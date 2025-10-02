@@ -427,7 +427,7 @@ export default function App() {
         throw error;
       }
     },
-    [signUp],
+    [signUp, setCurrentView],
   );
 
   const handleLogout = useCallback(async () => {
