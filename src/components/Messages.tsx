@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Input } from "./ui/input";
 import { ChatInterface } from "./ChatInterface";
 import { useChat } from "../hooks/useChat";
-import { createMultipleDemoConversations, clearAllConversations } from "../utils/chatDemo";
+// Chat demo utilities removed - using Supabase backend only
 import { toast } from "sonner";
 import { 
   ChevronLeft,
@@ -729,25 +729,9 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Start conversations with farmers, traders, and buyers by browsing products and clicking the chat button.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex justify-center">
               <Button onClick={onBack}>
                 Browse Products
-              </Button>
-              {/* Demo conversation creator for testing */}
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  if (effectiveCurrentUser?.id) {
-                    createMultipleDemoConversations(effectiveCurrentUser.id);
-                    // Refresh conversations after creating demo data
-                    setTimeout(() => {
-                      fetchConversations();
-                    }, 500);
-                  }
-                }}
-                className="text-sm"
-              >
-                Create Demo Conversations
               </Button>
             </div>
           </CardContent>
