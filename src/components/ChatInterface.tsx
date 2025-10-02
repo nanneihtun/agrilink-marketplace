@@ -74,14 +74,14 @@ export function ChatInterface({
   
   // Debug current user state - simplified
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && (!currentUser || !effectiveCurrentUser)) {
+    if (process.env.NODE_ENV === 'development' && (!passedCurrentUser || !effectiveCurrentUser)) {
       console.log('🔍 ChatInterface - Authentication issue:', {
-        hasCurrentUser: !!currentUser,
+        hasCurrentUser: !!passedCurrentUser,
         hasEffectiveUser: !!effectiveCurrentUser,
         timestamp: new Date().toISOString()
       });
     }
-  }, [currentUser?.id, effectiveCurrentUser?.id]);
+  }, [passedCurrentUser?.id, effectiveCurrentUser?.id]);
   
   const { messages, sendMessage, startConversation, fetchMessages } = useChat(effectiveCurrentUser?.id);
   const [newMessage, setNewMessage] = useState('');
@@ -390,7 +390,7 @@ export function ChatInterface({
       conversationId,
       productId,
       sellerId,
-      currentUserId: currentUser?.id,
+      currentUserId: passedCurrentUser?.id,
       conversationKey
     });
 
@@ -433,7 +433,7 @@ export function ChatInterface({
         conversationId,
         productId,
         sellerId,
-        currentUserId: currentUser?.id,
+        currentUserId: passedCurrentUser?.id,
         conversationKey
       });
       
