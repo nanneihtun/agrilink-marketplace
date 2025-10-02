@@ -33,6 +33,7 @@ interface ChatInterfaceProps {
   sellerVerified?: boolean;
   currentUserVerified?: boolean;
   currentUserType?: string;
+  currentUser?: any; // Pass currentUser from App.tsx instead of using separate useAuth
   sellerVerificationStatus?: {
     trustLevel: 'unverified' | 'under-review' | 'id-verified' | 'business-verified';
     tierLabel: string;
@@ -55,20 +56,21 @@ export function ChatInterface({
   currentUserVerified = false,
   currentUserType = 'buyer',
   sellerVerificationStatus,
-  product
+  product,
+  currentUser: passedCurrentUser
 }: ChatInterfaceProps) {
-  const { user: currentUser } = useAuth();
+  // Remove separate useAuth call - use passed currentUser from App.tsx
   
-  // Use proper authentication from useAuth hook only
+  // Use passed currentUser from App.tsx (fixes timing issues)
   const effectiveCurrentUser = useMemo(() => {
-    if (currentUser?.id) {
-      console.log('✅ ChatInterface authenticated user:', currentUser.email || currentUser.name);
-      return currentUser;
+    if (passedCurrentUser?.id) {
+      console.log('✅ ChatInterface using passed user:', passedCurrentUser.email || passedCurrentUser.name);
+      return passedCurrentUser;
     }
     
-    console.log('❌ ChatInterface: No authenticated user found');
+    console.log('❌ ChatInterface: No user passed from App.tsx');
     return null;
-  }, [currentUser?.id]);
+  }, [passedCurrentUser?.id]);
   
   // Debug current user state - simplified
   useEffect(() => {

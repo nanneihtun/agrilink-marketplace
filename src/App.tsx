@@ -1225,6 +1225,7 @@ if (typeof window !== "undefined") {
                     sellerName={selectedProduct.sellerName}
                     sellerType={selectedProduct.sellerType}
                     sellerLocation={selectedProduct.location}
+                    currentUser={currentUser}
                     sellerRating={4.5}
                     productName={selectedProduct.name}
                     productId={selectedProduct.id}
@@ -1248,6 +1249,7 @@ if (typeof window !== "undefined") {
                     sellerName={selectedProduct.sellerName}
                     sellerType={selectedProduct.sellerType}
                     sellerLocation={selectedProduct.location}
+                    currentUser={currentUser}
                     sellerRating={4.5}
                     productName={selectedProduct.name}
                     productId={selectedProduct.id}
