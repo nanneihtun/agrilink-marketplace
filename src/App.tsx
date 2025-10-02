@@ -877,35 +877,6 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Demo Account Helper - For Development/Testing */}
-                  {!currentUser && (
-                    <div className="bg-muted/50 border rounded-lg p-4">
-                      <div className="text-center mb-4">
-                        <p className="text-sm text-muted-foreground mb-3">
-                          🔧 Development Mode: Test different user types
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={createDemoAccounts}
-                          className="text-xs"
-                        >
-                          Create Demo Accounts
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Creates sample sellers and buyers for testing
-                        </p>
-                      </div>
-                      
-                      <div className="text-left text-xs space-y-1 bg-card p-3 rounded border">
-                        <p className="font-medium mb-2">Quick Login Credentials:</p>
-                        <p><strong>Admin:</strong> admin@agrilink.com / admin123</p>
-                        <p><strong>Farmer:</strong> thura.farmer@gmail.com / farmer123</p>
-                        <p><strong>Trader:</strong> kyaw.trader@gmail.com / trader123</p>
-                        <p><strong>Buyer:</strong> buyer.test@gmail.com / buyer123</p>
-                      </div>
-                    </div>
-                  )}
 
                   <SearchFilters
                     key={JSON.stringify(filters)}
