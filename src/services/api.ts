@@ -27,6 +27,8 @@ export const authAPI = {
     try {
       const supabaseClient = checkSupabase()
       
+      console.log('🔄 Starting signup process for:', userData.email)
+      
       // First, create the auth user
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email: userData.email,
@@ -34,6 +36,7 @@ export const authAPI = {
       })
 
       if (authError) {
+        console.error('❌ Auth signup failed:', authError)
         throw authError
       }
 
@@ -41,44 +44,70 @@ export const authAPI = {
         throw new Error('Failed to create user account')
       }
 
-      // Then create the profile in the users table
-      const { data: profileData, error: profileError } = await supabaseClient
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: userData.email,
-          name: userData.name,
-          user_type: userData.userType,
-          account_type: userData.accountType || 'individual', // Add required field with default
-          location: userData.location,
-          phone: userData.phone,
-          business_name: userData.businessName,
-          business_description: userData.businessDescription,
-          experience: userData.experience || 'New to farming',
-          quality_certifications: userData.qualityCertifications || [],
-          farming_methods: userData.farmingMethods || [],
-          verified: false,
-          phone_verified: false,
-          rating: 0,
-          total_reviews: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single()
+      console.log('✅ Auth user created:', authData.user.id)
 
-      if (profileError) {
-        console.error('Profile creation error:', profileError)
+      // Then create the profile in the users table
+      try {
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email: userData.email,
+            name: userData.name,
+            user_type: userData.userType,
+            account_type: userData.accountType || 'individual',
+            location: userData.location,
+            phone: userData.phone,
+            business_name: userData.businessName,
+            business_description: userData.businessDescription,
+            experience: userData.experience || 'New to farming',
+            quality_certifications: userData.qualityCertifications || [],
+            farming_methods: userData.farmingMethods || [],
+            verified: false,
+            phone_verified: false,
+            rating: 0,
+            total_reviews: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (profileError) {
+          console.error('❌ Profile creation failed:', profileError)
+          
+          // CRITICAL: Clean up the auth user if profile creation fails
+          console.log('🧹 Cleaning up auth user due to profile creation failure...')
+          try {
+            await supabaseClient.auth.admin.deleteUser(authData.user.id)
+            console.log('✅ Auth user cleaned up successfully')
+          } catch (cleanupError) {
+            console.error('⚠️ Failed to cleanup auth user:', cleanupError)
+          }
+          
+          throw new Error(`Profile creation failed: ${profileError.message}`)
+        }
+
+        console.log('✅ Profile created successfully:', profileData.id)
+
+        return {
+          user: authData.user,
+          session: authData.session,
+          profile: profileData
+        }
+      } catch (profileError) {
+        // If profile creation fails, clean up auth user
+        console.log('🧹 Cleaning up auth user due to profile creation error...')
+        try {
+          await supabaseClient.auth.admin.deleteUser(authData.user.id)
+          console.log('✅ Auth user cleaned up successfully')
+        } catch (cleanupError) {
+          console.error('⚠️ Failed to cleanup auth user:', cleanupError)
+        }
         throw profileError
       }
-
-      return {
-        user: authData.user,
-        session: authData.session,
-        profile: profileData
-      }
     } catch (error) {
-      console.error('Sign up API error:', error)
+      console.error('❌ Sign up API error:', error)
       throw error
     }
   },
