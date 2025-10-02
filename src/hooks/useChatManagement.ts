@@ -5,7 +5,7 @@ import type { Product } from "../data/products";
 interface UseChatManagementProps {
   currentUser: any;
   allProducts: Product[];
-  startConversation: (sellerId: string, productId: string) => Promise<void>;
+  startConversation: (buyerId: string, sellerId: string, productId: string) => Promise<void>;
   setSelectedChat: (id: string | null) => void;
   setAuthModal: (modal: "login" | "register" | null) => void;
 }
@@ -32,7 +32,7 @@ export function useChatManagement({
           (p) => p.id === productId,
         );
         if (product) {
-          await startConversation(product.sellerId, productId);
+          await startConversation(currentUser.id, product.sellerId, productId);
           setSelectedChat(productId);
         }
       } catch (error) {
