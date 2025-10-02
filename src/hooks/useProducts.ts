@@ -35,31 +35,42 @@ export const useProducts = () => {
     }
   }, [])
 
-  // Transform backend product to frontend format (snake_case from existing table)
+  // Transform backend product to frontend format (matches actual table schema)
   const transformBackendProduct = (backendProduct: any): Product => {
     return {
       id: backendProduct.id,
-      sellerId: backendProduct.seller_id, // Convert from snake_case
+      sellerId: backendProduct.seller_id,
       name: backendProduct.name,
       price: Number(backendProduct.price),
       unit: backendProduct.unit,
       location: backendProduct.location,
-      sellerType: 'farmer', // Default, will be populated from user lookup
-      sellerName: 'Loading...', // Will be populated from user lookup
-      image: backendProduct.images?.[0] || 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b',
-      quantity: backendProduct.quantity_available, // Convert from snake_case
-      minimumOrder: '1kg',
-      availableQuantity: backendProduct.quantity_available || '0kg',
-      deliveryOptions: ['Pickup', 'Delivery'],
-      paymentTerms: ['Cash on delivery'],
+      region: backendProduct.region,
+      
+      // From actual table schema:
+      sellerType: backendProduct.seller_type as 'farmer' | 'trader',
+      sellerName: backendProduct.seller_name,
+      
+      // Images
+      image: backendProduct.image || backendProduct.images?.[0],
+      images: backendProduct.images || [],
+      
+      // Convert table fields to frontend format:
+      quantity: backendProduct.quantity, // Table has 'quantity' field
+      minimumOrder: backendProduct.minimum_order || '1 unit',
+      availableQuantity: backendProduct.available_quantity || backendProduct.quantity,
+      deliveryOptions: backendProduct.delivery_options || ['Pickup'],
+      paymentTerms: backendProduct.payment_terms || ['Cash on delivery'],
+      
+      // Other fields
       category: backendProduct.category,
       description: backendProduct.description,
-      priceChange: Math.floor(Math.random() * 20) - 10, // Random for demo
-      lastUpdated: new Date(backendProduct.updated_at).toLocaleDateString()
+      additionalNotes: backendProduct.additional_notes,
+      priceChange: backendProduct.price_change || 0,
+      lastUpdated: backendProduct.last_updated ? new Date(backendProduct.last_updated).toLocaleDateString() : new Date().toLocaleDateString()
     }
   }
 
-  // Transform frontend product to backend format (snake_case for existing table)
+  // Transform frontend product to backend format (matches actual table schema)
   const transformFrontendProduct = (frontendProduct: Partial<Product>) => {
     const transformed = {
       name: frontendProduct.name || '',
@@ -67,13 +78,32 @@ export const useProducts = () => {
       category: frontendProduct.category || 'agriculture',
       price: frontendProduct.price || 0,
       unit: frontendProduct.unit || '',
-      quantity_available: frontendProduct.quantity || '', // Convert to snake_case
       location: frontendProduct.location || '',
+      region: frontendProduct.region || null,
+      
+      // Required fields that were missing:
+      seller_type: frontendProduct.sellerType || 'farmer',
+      seller_name: frontendProduct.sellerName || 'Unknown Seller',
+      
+      // Convert frontend fields to match table schema:
+      quantity: frontendProduct.quantity || '', // Table uses 'quantity' not 'quantity_available'
+      minimum_order: frontendProduct.minimumOrder || '1 unit',
+      available_quantity: frontendProduct.availableQuantity || frontendProduct.quantity || '',
+      delivery_options: frontendProduct.deliveryOptions || ['Pickup'],
+      payment_terms: frontendProduct.paymentTerms || ['Cash on delivery'],
+      additional_notes: frontendProduct.additionalNotes || null,
+      price_change: frontendProduct.priceChange || 0,
+      
+      // Images
+      image: frontendProduct.image || null,
       images: frontendProduct.image ? [frontendProduct.image] : (frontendProduct.images || []),
-      variations: [] // Keep for compatibility
+      
+      // Timestamps
+      last_updated: new Date().toISOString(),
+      is_active: true
     }
     
-    console.log('🔄 Frontend to backend transform:', transformed)
+    console.log('🔄 Frontend to backend transform (matches table schema):', transformed)
     return transformed
   }
 
