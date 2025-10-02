@@ -413,6 +413,14 @@ export default function App() {
     async (userData: any) => {
       try {
         await signUp(userData);
+        
+        // Show success message
+        toast.success("Registration successful! Welcome to AgriLink Marketplace!", {
+          duration: 4000,
+        });
+        
+        // Redirect to sign-in page
+        setCurrentView("login");
         setAuthModal(null);
       } catch (error) {
         console.error("Registration failed:", error);
