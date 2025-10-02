@@ -111,6 +111,9 @@ export function Register({ onRegister, onSwitchToLogin, onClose }: RegisterProps
     
     if (!validateForm()) return;
     
+    // Prevent duplicate submissions
+    if (isLoading) return;
+    
     setIsLoading(true);
 
     try {
