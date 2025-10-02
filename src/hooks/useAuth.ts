@@ -371,7 +371,7 @@ export const useAuth = () => {
               console.log('🚪 User signed out');
             } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               // Re-fetch user data on sign in or token refresh
-              checkSession();
+              console.log("🔔 Auth event received, but skipping profile fetch to avoid race condition");
             }
           }
         )
