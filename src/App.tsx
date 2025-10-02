@@ -1222,6 +1222,7 @@ if (typeof window !== "undefined") {
                 {/* Mobile: Full screen overlay */}
                 <div className="fixed inset-0 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300 md:hidden">
                   <ChatInterface
+                    key="mobile-chat"
                     sellerName={selectedProduct.sellerName}
                     sellerType={selectedProduct.sellerType}
                     sellerLocation={selectedProduct.location}
@@ -1246,6 +1247,7 @@ if (typeof window !== "undefined") {
                 {/* Desktop: Side panel */}
                 <div className="hidden md:block fixed right-0 bottom-0 h-[600px] w-96 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300">
                   <ChatInterface
+                    key="desktop-chat"
                     sellerName={selectedProduct.sellerName}
                     sellerType={selectedProduct.sellerType}
                     sellerLocation={selectedProduct.location}
