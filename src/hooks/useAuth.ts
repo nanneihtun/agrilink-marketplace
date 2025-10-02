@@ -8,6 +8,7 @@ export interface User {
   userType: 'farmer' | 'trader' | 'buyer' | 'admin';
   accountType?: 'individual' | 'business';
   location: string;
+    region?: string;
   verified: boolean;
   phoneVerified: boolean;
   phone?: string;
@@ -33,6 +34,7 @@ export const useAuth = () => {
     userType: 'farmer' | 'trader' | 'buyer';
     accountType?: 'individual' | 'business';
     location: string;
+    region?: string;
     phone?: string;
     businessName?: string;
     businessDescription?: string;
@@ -50,7 +52,7 @@ export const useAuth = () => {
       console.log('  - UserType:', userData.userType);
       console.log('  - AccountType:', userData.accountType);
       console.log('  - Location:', userData.location);
-
+      console.log("  - Region:", userData.region);
       // 1. Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
@@ -76,6 +78,7 @@ export const useAuth = () => {
         user_type: userData.userType,
         account_type: userData.accountType || 'individual',
         location: userData.location,
+        region: userData.region,
         phone: userData.phone,
         business_name: userData.businessName,
         business_description: userData.businessDescription,
