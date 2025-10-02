@@ -91,12 +91,27 @@ type AuthModalType = "login" | "register" | null;
 
 
 
-// Clear all localStorage on app start to force fresh database fetch
+// Clear only hardcoded Figma localStorage keys, keep necessary ones
 if (typeof window !== "undefined") {
-  console.log("🧹 Clearing all localStorage to fetch fresh data from database");
-  localStorage.clear();
-}
-export default function App() {
+  const hardcodedKeys = [
+    "agriconnect-myanmar-current-user",
+    "agriconnect-myanmar-users",
+    "agriconnect-myanmar-local-products",
+    "agriconnect-myanmar-user-products",
+    "agriconnect-myanmar-saved-products",
+    "agriconnect-myanmar-conversations",
+    "agriconnect-myanmar-messages",
+    "agriconnect-myanmar-offers",
+    "agriconnect-myanmar-reviews"
+  ];
+  
+  hardcodedKeys.forEach(key => {
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key);
+      console.log("🧹 Removed hardcoded localStorage key:", key);
+    }
+  });
+}export default function App() {
   // Simplified error boundary state
   const [criticalError, setCriticalError] = useState<string | null>(null);
   
