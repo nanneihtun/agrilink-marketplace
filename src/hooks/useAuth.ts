@@ -59,23 +59,14 @@ export const useAuth = () => {
     setLoading(true)
     try {
       if (backendAvailable) {
-        // Backend mode
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        
-        if (error) throw error
+        // Use the centralized authAPI.signIn function
+        const { authAPI } = await import('../services/api')
+        const data = await authAPI.signIn(email, password)
         
         if (data.user) {
-          // Fetch user profile from backend
-          const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single()
-          
-          if (profileError) throw profileError
+          // Fetch user profile using profileAPI
+          const { profileAPI } = await import('../services/api')
+          const profile = await profileAPI.get()
           
           const user: User = {
             id: profile.id,
@@ -89,7 +80,7 @@ export const useAuth = () => {
             experience: profile.experience,
             verified: profile.verified,
             phoneVerified: profile.phone_verified,
-            phone: profile.phone, // Add phone field from backend
+            phone: profile.phone,
             qualityCertifications: profile.quality_certifications || [],
             farmingMethods: profile.farming_methods || [],
             profileImage: profile.profile_image,
@@ -242,25 +233,25 @@ export const useAuth = () => {
     
     try {
       if (backendAvailable) {
-        // Backend mode
-        const { error } = await supabase
-          .from('users')
-          .update({
-            name: updates.name,
-            location: updates.location,
-            business_name: updates.businessName,
-            business_description: updates.businessDescription,
-            experience: updates.experience,
-            verified: updates.verified,
-            phone_verified: updates.phoneVerified,
-            quality_certifications: updates.qualityCertifications,
-            farming_methods: updates.farmingMethods,
-            profile_image: updates.profileImage,
-            storefront_image: updates.storefrontImage,
-          })
-          .eq('id', user.id)
+        // Use centralized profileAPI.update
+        const { profileAPI } = await import('../services/api')
         
-        if (error) throw error
+        // Convert User updates to backend format
+        const backendUpdates = {
+          name: updates.name,
+          location: updates.location,
+          business_name: updates.businessName,
+          business_description: updates.businessDescription,
+          experience: updates.experience,
+          verified: updates.verified,
+          phone_verified: updates.phoneVerified,
+          quality_certifications: updates.qualityCertifications,
+          farming_methods: updates.farmingMethods,
+          profile_image: updates.profileImage,
+          storefront_image: updates.storefrontImage,
+        }
+        
+        await profileAPI.update(backendUpdates)
       } else {
         // Demo mode
         const storedUsers = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]')
@@ -286,10 +277,6 @@ export const useAuth = () => {
   // Enhanced authentication restoration with better error handling
   useEffect(() => {
     const checkSession = async () => {
-      console.log('🎯 DEMO MODE ACTIVATED: Backend disabled, using local demo data');
-      console.log('🎯 LOCAL MODE ACTIVATED: Backend disabled, using local storage');
-      console.log('🎯 Backend not available, using local mode');
-
       try {
         if (backendAvailable) {
           // Backend mode - only run if backend is actually available
@@ -304,19 +291,12 @@ export const useAuth = () => {
             }
             
             if (session?.user) {
-              // Fetch user profile
-              const { data: profile, error: profileError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single()
-              
-              if (profileError) {
-                console.warn('Profile fetch error, falling back to local mode:', profileError);
-                throw profileError; // Fall through to local mode
-              }
-              
-              if (profile) {
+              // Fetch user profile using profileAPI
+              try {
+                const { profileAPI } = await import('../services/api')
+                const profile = await profileAPI.get()
+                
+                if (profile) {
                 const user: User = {
                   id: profile.id,
                   email: profile.email,
@@ -339,14 +319,18 @@ export const useAuth = () => {
                   totalReviews: profile.total_reviews || 0
                 }
                 
-                setUser(user)
-                setSession(session)
-                
-                // Also save to localStorage for consistency
-                localStorage.setItem('agriconnect-myanmar-current-user', JSON.stringify(user))
-                console.log('✅ Backend authentication successful:', user.email);
-                setLoading(false);
-                return; // Success, exit early
+                  setUser(user)
+                  setSession(session)
+                  
+                  // Also save to localStorage for consistency
+                  localStorage.setItem('agriconnect-myanmar-current-user', JSON.stringify(user))
+                  console.log('✅ Backend authentication successful:', user.email);
+                  setLoading(false);
+                  return; // Success, exit early
+                }
+              } catch (profileError) {
+                console.warn('Profile fetch error:', profileError);
+                throw profileError; // Fall through to local mode
               }
             }
           } catch (backendError) {
