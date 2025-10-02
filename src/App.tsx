@@ -91,6 +91,11 @@ type AuthModalType = "login" | "register" | null;
 
 
 
+// Clear all localStorage on app start to force fresh database fetch
+if (typeof window !== "undefined") {
+  console.log("🧹 Clearing all localStorage to fetch fresh data from database");
+  localStorage.clear();
+}
 export default function App() {
   // Simplified error boundary state
   const [criticalError, setCriticalError] = useState<string | null>(null);
