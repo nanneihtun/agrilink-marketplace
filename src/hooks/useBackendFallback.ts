@@ -43,15 +43,15 @@ export const useBackendFallback = () => {
           setBackendAvailable(true)
         }
       } catch (error) {
-        console.log('❌ Backend check failed:', error)
-        setBackendAvailable(false)
+        console.log('❌ Backend check failed:', error);
+        setBackendAvailable(false);
       } finally {
-        setChecking(false)
+        setChecking(false);
       }
     }
 
-    checkBackendAvailability()
-  }, [])
+    checkBackendAvailability();
+  }, []);
 
-  return { backendAvailable, checking }
+  return { backendAvailable, checking };
 }

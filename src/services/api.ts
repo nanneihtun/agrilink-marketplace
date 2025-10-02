@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 
-// Helper to check if Supabase is available
+// Helper to check Supabase availability
 const checkSupabase = () => {
   if (!supabase) {
     throw new Error('Supabase client not available')
@@ -8,7 +8,7 @@ const checkSupabase = () => {
   return supabase
 }
 
-// Authentication API - using direct Supabase calls
+// Authentication API
 export const authAPI = {
   signUp: async (userData: {
     email: string
@@ -26,21 +26,21 @@ export const authAPI = {
     try {
       const supabaseClient = checkSupabase()
       
-      // Sign up with Supabase Auth
+      // First, create the auth user
       const { data: authData, error: authError } = await supabaseClient.auth.signUp({
         email: userData.email,
-        password: userData.password
+        password: userData.password,
       })
-      
+
       if (authError) {
         throw authError
       }
-      
+
       if (!authData.user) {
-        throw new Error('User creation failed')
+        throw new Error('Failed to create user account')
       }
-      
-      // Create user profile in users table
+
+      // Then create the profile in the users table
       const { data: profileData, error: profileError } = await supabaseClient
         .from('users')
         .insert({
@@ -52,27 +52,31 @@ export const authAPI = {
           phone: userData.phone,
           business_name: userData.businessName,
           business_description: userData.businessDescription,
-          experience: userData.experience,
-          quality_certifications: userData.qualityCertifications,
-          farming_methods: userData.farmingMethods,
+          experience: userData.experience || 'New to farming',
+          quality_certifications: userData.qualityCertifications || [],
+          farming_methods: userData.farmingMethods || [],
           verified: false,
           phone_verified: false,
           rating: 0,
-          total_reviews: 0
+          total_reviews: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()
-      
+
       if (profileError) {
+        console.error('Profile creation error:', profileError)
         throw profileError
       }
-      
+
       return {
-        user: profileData,
-        session: authData.session
+        user: authData.user,
+        session: authData.session,
+        profile: profileData
       }
     } catch (error) {
-      console.error('Signup API error:', error)
+      console.error('Sign up API error:', error)
       throw error
     }
   },
@@ -83,7 +87,7 @@ export const authAPI = {
       
       const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
-        password
+        password,
       })
       
       if (error) {
@@ -100,57 +104,28 @@ export const authAPI = {
   signOut: async () => {
     try {
       const supabaseClient = checkSupabase()
-      
       const { error } = await supabaseClient.auth.signOut()
-      
-      if (error) {
-        throw error
-      }
-      
-      return { success: true }
+      if (error) throw error
     } catch (error) {
-      console.error('Sign out API error:', error)
+      console.error('Sign out error:', error)
       throw error
     }
   },
 
-  getCurrentUser: async () => {
+  getCurrentSession: async () => {
     try {
       const supabaseClient = checkSupabase()
-      
       const { data: { session }, error } = await supabaseClient.auth.getSession()
-      
-      if (error) {
-        throw error
-      }
-      
-      if (!session?.user) {
-        return null
-      }
-      
-      // Get user profile
-      const { data: profile, error: profileError } = await supabaseClient
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-      
-      if (profileError) {
-        throw profileError
-      }
-      
-      return {
-        user: profile,
-        session
-      }
+      if (error) throw error
+      return session
     } catch (error) {
-      console.error('Get current user API error:', error)
+      console.error('Get session error:', error)
       throw error
     }
   }
 }
 
-// Products API - using direct Supabase calls
+// Products API
 export const productsAPI = {
   getAll: async () => {
     try {
@@ -183,25 +158,34 @@ export const productsAPI = {
     }
   },
 
-  create: async (productData: any) => {
+  create: async (productData: {
+    name: string
+    description?: string
+    category: string
+    price: number
+    unit: string
+    quantity_available: string
+    location: string
+    images: string[]
+    variations: any[]
+  }) => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
       const { data, error } = await supabaseClient
         .from('products')
-        .insert(productData)
-        .select(`
-          *,
-          seller:users!products_seller_id_fkey(
-            id,
-            name,
-            business_name,
-            user_type,
-            verified,
-            rating,
-            total_reviews
-          )
-        `)
+        .insert({
+          ...productData,
+          seller_id: session.user.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
         .single()
       
       if (error) {
@@ -215,26 +199,24 @@ export const productsAPI = {
     }
   },
 
-  update: async (id: string, updates: any) => {
+  update: async (productId: string, updates: any) => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
       const { data, error } = await supabaseClient
         .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          seller:users!products_seller_id_fkey(
-            id,
-            name,
-            business_name,
-            user_type,
-            verified,
-            rating,
-            total_reviews
-          )
-        `)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', productId)
+        .eq('seller_id', session.user.id) // Only allow updating own products
+        .select()
         .single()
       
       if (error) {
@@ -248,14 +230,20 @@ export const productsAPI = {
     }
   },
 
-  delete: async (id: string) => {
+  delete: async (productId: string) => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
       const { error } = await supabaseClient
         .from('products')
         .delete()
-        .eq('id', id)
+        .eq('id', productId)
+        .eq('seller_id', session.user.id) // Only allow deleting own products
       
       if (error) {
         throw error
@@ -268,24 +256,13 @@ export const productsAPI = {
     }
   },
 
-  getByUser: async (userId: string) => {
+  getUserProducts: async (userId: string) => {
     try {
       const supabaseClient = checkSupabase()
       
       const { data, error } = await supabaseClient
         .from('products')
-        .select(`
-          *,
-          seller:users!products_seller_id_fkey(
-            id,
-            name,
-            business_name,
-            user_type,
-            verified,
-            rating,
-            total_reviews
-          )
-        `)
+        .select('*')
         .eq('seller_id', userId)
         .order('created_at', { ascending: false })
       
@@ -295,49 +272,104 @@ export const productsAPI = {
       
       return data || []
     } catch (error) {
-      console.error('Get user products API error:', error)
+      console.error('Fetch user products API error:', error)
       throw error
     }
   }
 }
 
-// Conversations API - using direct Supabase calls
-export const conversationsAPI = {
-  getAll: async () => {
+// Profile API
+export const profileAPI = {
+  get: async () => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
       const { data, error } = await supabaseClient
-        .from('conversations')
-        .select(`
-          *,
-          buyer:users!conversations_buyer_id_fkey(id, name),
-          seller:users!conversations_seller_id_fkey(id, name),
-          product:products!conversations_product_id_fkey(id, name)
-        `)
-        .order('updated_at', { ascending: false })
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
       
       if (error) {
         throw error
       }
       
-      return data || []
+      return data
     } catch (error) {
-      console.error('Fetch conversations API error:', error)
+      console.error('Fetch profile API error:', error)
       throw error
     }
   },
 
-  create: async (buyerId: string, sellerId: string, productId: string) => {
+  update: async (updates: any) => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
+      const { data, error } = await supabaseClient
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', session.user.id)
+        .select()
+        .single()
+      
+      if (error) {
+        throw error
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Update profile API error:', error)
+      throw error
+    }
+  }
+}
+
+// Conversations API
+export const conversationsAPI = {
+  create: async (sellerId: string, productId: string) => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
+      // Check if conversation already exists
+      const { data: existingConversation } = await supabaseClient
+        .from('conversations')
+        .select('*')
+        .eq('buyer_id', session.user.id)
+        .eq('seller_id', sellerId)
+        .eq('product_id', productId)
+        .single()
+
+      if (existingConversation) {
+        return existingConversation
+      }
+
+      // Create new conversation
       const { data, error } = await supabaseClient
         .from('conversations')
         .insert({
-          buyer_id: buyerId,
+          buyer_id: session.user.id,
           seller_id: sellerId,
-          product_id: productId
+          product_id: productId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()
@@ -351,18 +383,95 @@ export const conversationsAPI = {
       console.error('Create conversation API error:', error)
       throw error
     }
+  },
+
+  getAll: async () => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        return []
+      }
+
+      const { data, error } = await supabaseClient
+        .from('conversations')
+        .select(`
+          *,
+          buyer:users!conversations_buyer_id_fkey(id, name),
+          seller:users!conversations_seller_id_fkey(id, name),
+          product:products!conversations_product_id_fkey(id, name)
+        `)
+        .or(`buyer_id.eq.${session.user.id},seller_id.eq.${session.user.id}`)
+        .order('updated_at', { ascending: false })
+      
+      if (error) {
+        throw error
+      }
+      
+      return data || []
+    } catch (error) {
+      console.error('Fetch conversations API error:', error)
+      return []
+    }
   }
 }
 
-// Messages API - using direct Supabase calls
+// Messages API
 export const messagesAPI = {
+  send: async (conversationId: string, content: string, messageType: string = 'text') => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
+      const { data, error } = await supabaseClient
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: session.user.id,
+          content,
+          message_type: messageType,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        throw error
+      }
+
+      // Update conversation's updated_at timestamp
+      await supabaseClient
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId)
+      
+      return data
+    } catch (error) {
+      console.error('Send message API error:', error)
+      throw error
+    }
+  },
+
   getForConversation: async (conversationId: string) => {
     try {
       const supabaseClient = checkSupabase()
       
+      const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
+      if (sessionError || !session?.user) {
+        throw new Error('Not authenticated')
+      }
+
       const { data, error } = await supabaseClient
         .from('messages')
-        .select('*')
+        .select(`
+          *,
+          sender:users!messages_sender_id_fkey(id, name)
+        `)
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
       
@@ -375,43 +484,30 @@ export const messagesAPI = {
       console.error('Fetch messages API error:', error)
       throw error
     }
-  },
-
-  send: async (conversationId: string, content: string, messageType: string = 'text') => {
-    try {
-      const supabaseClient = checkSupabase()
-      
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      
-      if (!session?.user) {
-        throw new Error('User not authenticated')
-      }
-      
-      const { data, error } = await supabaseClient
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: session.user.id,
-          content,
-          type: messageType
-        })
-        .select()
-        .single()
-      
-      if (error) {
-        throw error
-      }
-      
-      return data
-    } catch (error) {
-      console.error('Send message API error:', error)
-      throw error
-    }
   }
 }
 
-// Real-time API - using Supabase real-time subscriptions
+// Real-time subscriptions
 export const realtimeAPI = {
+  subscribeToMessages: (conversationId: string, callback: (payload: any) => void) => {
+    try {
+      const supabaseClient = checkSupabase()
+      
+      return supabaseClient
+        .channel(`messages:${conversationId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        }, callback)
+        .subscribe()
+    } catch (error) {
+      console.error('Subscribe to messages API error:', error)
+      return { unsubscribe: () => {} }
+    }
+  },
+
   subscribeToProducts: (callback: (payload: any) => void) => {
     try {
       const supabaseClient = checkSupabase()
@@ -426,26 +522,7 @@ export const realtimeAPI = {
         .subscribe()
     } catch (error) {
       console.error('Subscribe to products API error:', error)
-      throw error
-    }
-  },
-
-  subscribeToMessages: (conversationId: string, callback: (payload: any) => void) => {
-    try {
-      const supabaseClient = checkSupabase()
-      
-      return supabaseClient
-        .channel(`messages:${conversationId}`)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`
-        }, callback)
-        .subscribe()
-    } catch (error) {
-      console.error('Subscribe to messages API error:', error)
-      throw error
+      return { unsubscribe: () => {} }
     }
   }
 }
