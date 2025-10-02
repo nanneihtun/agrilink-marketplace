@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useBackendFallback } from './useBackendFallback'
+import ENV from '../config/env'
 
 interface Message {
   id: string
@@ -36,10 +36,10 @@ export const useChat = () => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { backendAvailable } = useBackendFallback()
 
   const loadConversations = useCallback(async (userId: string) => {
-    if (!backendAvailable) {
+    if (!ENV.isSupabaseConfigured()) {
+      console.log('❌ Supabase not configured for chat');
       setConversations([]);
       setLoading(false);
       return;
@@ -99,10 +99,10 @@ export const useChat = () => {
     } finally {
       setLoading(false)
     }
-  }, [backendAvailable])
+  }, [])
 
   const loadMessages = useCallback(async (conversationId: string) => {
-    if (!backendAvailable) {
+    if (!ENV.isSupabaseConfigured()) {
       setMessages(prev => ({ ...prev, [conversationId]: [] }));
       return;
     }
@@ -149,7 +149,7 @@ export const useChat = () => {
       console.error('❌ Failed to load messages:', err)
       setMessages(prev => ({ ...prev, [conversationId]: [] }))
     }
-  }, [backendAvailable])
+  }, [])
 
   const sendMessage = useCallback(async (
     conversationId: string,
@@ -158,7 +158,7 @@ export const useChat = () => {
     type: 'text' | 'offer' | 'image' = 'text',
     offerDetails?: any
   ) => {
-    if (!backendAvailable) {
+    if (!ENV.isSupabaseConfigured()) {
       return;
     }
 
@@ -219,14 +219,14 @@ export const useChat = () => {
     } catch (err) {
       console.error('❌ Failed to send message:', err)
     }
-  }, [backendAvailable])
+  }, [])
 
   const startConversation = useCallback(async (
     buyerId: string,
     sellerId: string,
     productId: string
   ) => {
-    if (!backendAvailable) {
+    if (!ENV.isSupabaseConfigured()) {
       return null;
     }
 
@@ -327,7 +327,7 @@ export const useChat = () => {
       console.error('❌ Failed to start conversation:', err)
       return null
     }
-  }, [backendAvailable])
+  }, [])
 
   return {
     conversations,
