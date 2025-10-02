@@ -379,8 +379,6 @@ export const useAuth = () => {
       } catch (error) {
         console.warn('⚠️ Failed to set up Supabase auth listener:', error);
       }
-    } else {
-      console.log('⏭️ Skipping Supabase auth listener - backend not available');
     }
 
     return () => {
