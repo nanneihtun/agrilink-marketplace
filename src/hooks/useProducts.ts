@@ -30,7 +30,7 @@ export const useProducts = () => {
       // Try to fetch from backend first, fall back to KV store
       try {
         const fetchPromise = productsAPI.getAll()
-        const backendProducts = await Promise.race([fetchPromise, timeoutPromise])
+        const backendProducts = await Promise.race([fetchPromise, timeoutPromise]) as any[]
         const transformedProducts = backendProducts.map(transformBackendProduct)
         setProducts(transformedProducts)
       } catch (backendError) {
@@ -82,22 +82,25 @@ export const useProducts = () => {
       quantity: backendProduct.quantity_available,
       priceChange: Math.floor(Math.random() * 20) - 10, // Random for demo
       lastUpdated: new Date(backendProduct.updated_at).toLocaleDateString(),
-      variations: backendProduct.variations || []
+      minimumOrder: '1kg' as string,
+      availableQuantity: backendProduct.quantity_available || '0kg',
+      deliveryOptions: ['Pickup', 'Delivery'] as string[],
+      paymentTerms: ['Cash on delivery']
     }
   }
 
   // Transform frontend product to backend format
   const transformFrontendProduct = (frontendProduct: Partial<Product>) => {
     return {
-      name: frontendProduct.name,
-      description: frontendProduct.variations?.[0]?.description,
+      name: frontendProduct.name || '',
+      description: frontendProduct.description || '',
       category: 'agriculture', // Default category
-      price: frontendProduct.price,
-      unit: frontendProduct.unit,
-      quantity_available: frontendProduct.quantity,
-      location: frontendProduct.location,
+      price: frontendProduct.price || 0,
+      unit: frontendProduct.unit || '',
+      quantity_available: frontendProduct.quantity || '',
+      location: frontendProduct.location || '',
       images: frontendProduct.image ? [frontendProduct.image] : [],
-      variations: frontendProduct.variations || []
+      variations: []
     }
   }
 
@@ -108,35 +111,18 @@ export const useProducts = () => {
         throw new Error('Backend connection required');
       }
       
+      console.log('➕ Creating product in Supabase:', productData.name);
       const backendData = transformFrontendProduct(productData)
+      console.log('🚀 Sending to Supabase:', backendData);
       
-      try {
-        const newProduct = await productsAPI.create(backendData)
-        const transformedProduct = transformBackendProduct(newProduct)
-        setProducts(prev => [transformedProduct, ...prev])
-        return transformedProduct
-      } catch (backendError) {
-        console.log('Backend create failed, trying KV store:', backendError)
-        
-        // Fallback to KV store
-        const response = await fetch(`${ENV.SUPABASE_URL}/functions/v1/make-server-aa5728d5/kv/products`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${ENV.SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify(backendData)
-        })
-        
-        const result = await response.json()
-        if (result.product) {
-          const transformedProduct = transformBackendProduct(result.product)
-          setProducts(prev => [transformedProduct, ...prev])
-          return transformedProduct
-        }
-      }
+      const newProduct = await productsAPI.create(backendData)
+      const transformedProduct = transformBackendProduct(newProduct)
+      
+      console.log('✅ Product created successfully in Supabase');
+      setProducts(prev => [transformedProduct, ...prev])
+      return transformedProduct
     } catch (err) {
-      console.error('Create product error:', err)
+      console.error('❌ Create product error:', err)
       throw err
     }
   }, [backendAvailable])
@@ -144,17 +130,27 @@ export const useProducts = () => {
   // Update a product
   const updateProduct = useCallback(async (productId: string, updates: Partial<Product>) => {
     try {
+      if (!backendAvailable || !ENV.isSupabaseConfigured()) {
+        throw new Error('Backend connection required for product updates');
+      }
+      
+      console.log('🔄 Updating product in Supabase:', productId);
+      console.log('📝 Update data:', updates);
+      
       const backendData = transformFrontendProduct(updates)
+      console.log('🚀 Sending to Supabase:', backendData);
+      
       const updatedProduct = await productsAPI.update(productId, backendData)
       const transformedProduct = transformBackendProduct(updatedProduct)
       
+      console.log('✅ Product updated successfully in Supabase');
       setProducts(prev => prev.map(p => p.id === productId ? transformedProduct : p))
       return transformedProduct
     } catch (err) {
-      console.error('Update product error:', err)
+      console.error('❌ Update product error:', err)
       throw err
     }
-  }, [])
+  }, [backendAvailable])
 
   // Delete a product
   const deleteProduct = useCallback(async (productId: string) => {
