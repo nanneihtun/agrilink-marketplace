@@ -48,7 +48,7 @@ export const authAPI = {
 
       // Check if profile already exists (from previous failed attempt)
       const { data: existingProfile } = await supabaseClient
-        .from('users_simplified')
+        .from('users')
         .select('id')
         .eq('id', authData.user.id)
         .single()
@@ -58,7 +58,7 @@ export const authAPI = {
         console.log('✅ Profile already exists, using existing profile')
         // Get the full existing profile
         const { data: fullProfile, error: fetchError } = await supabaseClient
-          .from('users_simplified')
+          .from('users')
           .select('*')
           .eq('id', authData.user.id)
           .single()
@@ -71,7 +71,7 @@ export const authAPI = {
         console.log('🔄 Creating new profile...')
         // Create new profile in the users table
         const { data: newProfile, error: profileError } = await supabaseClient
-          .from('users_simplified')
+          .from('users')
           .insert({
             id: authData.user.id,
             email: userData.email,
@@ -313,7 +313,7 @@ export const profileAPI = {
       }
 
       const { data, error } = await supabaseClient
-        .from('users_simplified')
+        .from('users')
         .select('*')
         .eq('id', session.user.id)
         .single()
@@ -339,7 +339,7 @@ export const profileAPI = {
       }
 
       const { data, error } = await supabaseClient
-        .from('users_simplified')
+        .from('users')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
