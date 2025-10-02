@@ -53,7 +53,6 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import { useProducts } from "./hooks/useProducts";
 import { useChat } from "./hooks/useChat";
-import { useBackendFallback } from "./hooks/useBackendFallback";
 
 // Import chat storage manager for periodic cleanup
 import { useRenderMonitor } from "./utils/performanceMonitor";
@@ -189,8 +188,6 @@ export default function App() {
   });
 
   // Use custom hooks for backend integration - MUST come before useEffects that depend on them
-  const { backendAvailable, checking: backendChecking } =
-    useBackendFallback();
   const {
     user: currentUser,
     loading: authLoading,
@@ -266,7 +263,6 @@ export default function App() {
       let hiddenSampleProducts: string[] = [];
       
       // Use backend products if available, combined with local products
-      if (backendAvailable && backendProducts && backendProducts.length > 0) {
         return [...backendProducts, ...localProducts];
       }
       
@@ -283,7 +279,6 @@ export default function App() {
     }
   }, [
     backendProducts?.length, 
-    backendAvailable, 
     localProducts.length, // Simplified dependency
     hiddenProductsVersion
   ]);
@@ -303,7 +298,6 @@ export default function App() {
 
   const productManagement = useProductManagement({
     currentUser,
-    backendAvailable,
     backendProducts,
     localProducts,
     setLocalProducts,
@@ -617,7 +611,7 @@ export default function App() {
   }, [productToView?.id, productToView?.name, productToView?.price, allProducts.length]);
 
   // Show loading screen during initial backend check and auth
-  if (backendChecking || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -626,7 +620,7 @@ export default function App() {
           </div>
           <h2 className="text-xl font-semibold">AgriLink</h2>
           <p className="text-muted-foreground">
-            {backendChecking ? "Connecting to server..." : "Loading..."}
+            {"Loading..."}
           </p>
           <div className="w-32 h-1 bg-muted rounded-full mx-auto overflow-hidden">
             <div className="w-full h-full bg-primary rounded-full animate-pulse"></div>
