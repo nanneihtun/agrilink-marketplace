@@ -35,41 +35,57 @@ export const useProducts = () => {
     }
   }, [])
 
-  // Transform backend product to frontend format
+  // Transform backend product to frontend format (now much simpler!)
   const transformBackendProduct = (backendProduct: any): Product => {
     return {
       id: backendProduct.id,
-      sellerId: backendProduct.seller_id,
+      sellerId: backendProduct.sellerId, // Now matches!
       name: backendProduct.name,
       price: Number(backendProduct.price),
       unit: backendProduct.unit,
       location: backendProduct.location,
-      sellerType: 'farmer', // Will be populated from separate user query
-      sellerName: 'Loading...', // Will be populated from separate user query
-      image: backendProduct.images?.[0] || 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b',
-      quantity: backendProduct.quantity_available,
-      priceChange: Math.floor(Math.random() * 20) - 10, // Random for demo
-      lastUpdated: new Date(backendProduct.updated_at).toLocaleDateString(),
-      minimumOrder: '1kg' as string,
-      availableQuantity: backendProduct.quantity_available || '0kg',
-      deliveryOptions: ['Pickup', 'Delivery'] as string[],
-      paymentTerms: ['Cash on delivery']
+      region: backendProduct.region,
+      sellerType: backendProduct.sellerType || 'farmer',
+      sellerName: backendProduct.sellerName || 'Loading...', // Will be populated from user lookup
+      image: backendProduct.image || backendProduct.images?.[0],
+      images: backendProduct.images || [],
+      quantity: backendProduct.quantity,
+      minimumOrder: backendProduct.minimumOrder || '1 unit',
+      availableQuantity: backendProduct.availableQuantity || backendProduct.quantity,
+      deliveryOptions: backendProduct.deliveryOptions || ['Pickup'],
+      paymentTerms: backendProduct.paymentTerms || ['Cash on delivery'],
+      category: backendProduct.category,
+      description: backendProduct.description,
+      additionalNotes: backendProduct.additionalNotes,
+      priceChange: backendProduct.priceChange || 0,
+      lastUpdated: backendProduct.lastUpdated ? new Date(backendProduct.lastUpdated).toLocaleDateString() : new Date().toLocaleDateString()
     }
   }
 
-  // Transform frontend product to backend format
+  // Transform frontend product to backend format (now much simpler!)
   const transformFrontendProduct = (frontendProduct: Partial<Product>) => {
-    return {
+    // Since schema now matches frontend, we can pass most fields directly
+    const transformed = {
       name: frontendProduct.name || '',
       description: frontendProduct.description || '',
-      category: 'agriculture', // Default category
+      category: frontendProduct.category || 'agriculture',
       price: frontendProduct.price || 0,
       unit: frontendProduct.unit || '',
-      quantity_available: frontendProduct.quantity || '',
+      quantity: frontendProduct.quantity || '', // Now matches schema
       location: frontendProduct.location || '',
-      images: frontendProduct.image ? [frontendProduct.image] : [],
-      variations: []
+      region: frontendProduct.region,
+      image: frontendProduct.image,
+      images: frontendProduct.images || [],
+      minimumOrder: frontendProduct.minimumOrder || '1 unit',
+      availableQuantity: frontendProduct.availableQuantity || frontendProduct.quantity || '',
+      deliveryOptions: frontendProduct.deliveryOptions || ['Pickup'],
+      paymentTerms: frontendProduct.paymentTerms || ['Cash on delivery'],
+      additionalNotes: frontendProduct.additionalNotes,
+      priceChange: frontendProduct.priceChange || 0
     }
+    
+    console.log('🔄 Frontend to backend transform:', transformed)
+    return transformed
   }
 
   // Create a new product

@@ -204,9 +204,10 @@ export const productsAPI = {
         .from('products')
         .insert({
           ...productData,
-          seller_id: session.user.id,
+          sellerId: session.user.id, // Now matches schema!
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
         })
         .select()
         .single()
@@ -238,7 +239,7 @@ export const productsAPI = {
           updated_at: new Date().toISOString()
         })
         .eq('id', productId)
-        .eq('seller_id', session.user.id) // Only allow updating own products
+        .eq('sellerId', session.user.id) // Only allow updating own products
         .select()
         .single()
       
@@ -266,7 +267,7 @@ export const productsAPI = {
         .from('products')
         .delete()
         .eq('id', productId)
-        .eq('seller_id', session.user.id) // Only allow deleting own products
+        .eq('sellerId', session.user.id) // Only allow deleting own products
       
       if (error) {
         throw error
@@ -286,7 +287,7 @@ export const productsAPI = {
       const { data, error } = await supabaseClient
         .from('products')
         .select('*')
-        .eq('seller_id', userId)
+        .eq('sellerId', userId)
         .order('created_at', { ascending: false })
       
       if (error) {
