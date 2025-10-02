@@ -283,7 +283,7 @@ export function ChatInterface({
           
           // Start new conversation
           console.log('🆕 Starting new conversation');
-          const conversation = await startConversation(sellerId, productId);
+          const conversation = await startConversation(effectiveCurrentUser.id, sellerId, productId);
           console.log('✅ New conversation created:', conversation.id);
           setConversationId(conversation.id);
         }
