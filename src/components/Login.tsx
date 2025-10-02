@@ -32,25 +32,11 @@ export function Login({ onLogin, onSwitchToRegister, onForgotPassword, onClose }
     setIsLoading(true);
 
     try {
-      console.log('🔐 Attempting demo login with email:', formData.email, 'password:', formData.password);
-      
-      // Debug: Check if localStorage has demo users
-      const storedUsers = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
-      console.log('📋 LocalStorage users count:', storedUsers.length);
-      if (storedUsers.length > 0) {
-        console.log('📧 Available emails:', storedUsers.map((u: any) => u.email).slice(0, 5));
-        // Check admin specifically
-        const adminUser = storedUsers.find((u: any) => u.email === 'admin@agrilink.com');
-        if (adminUser) {
-          console.log('👤 Admin user found with password:', adminUser.password);
-        }
-      }
-      
       await onLogin(formData.email, formData.password);
-      console.log('✅ Demo login successful');
+      console.log('✅ Login successful');
       onClose();
     } catch (err: any) {
-      console.error('❌ Demo login error in component:', err);
+      console.error('❌ Login error:', err);
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
