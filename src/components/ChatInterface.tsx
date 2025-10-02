@@ -334,6 +334,12 @@ export function ChatInterface({
       const sentMessage = await sendMessage(conversationId, messageToSend);
       console.log('✅ Message sent successfully:', sentMessage);
       
+      // Reload messages from database to show the new message
+      if (conversationId) {
+        console.log('🔄 Reloading messages after send...');
+        await loadMessages(conversationId);
+      }
+      
       // Verify conversation state after sending
       console.log('🔍 Post-send conversation state:', {
         conversationId,
