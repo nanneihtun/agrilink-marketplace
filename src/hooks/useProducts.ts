@@ -37,6 +37,12 @@ export const useProducts = () => {
 
   // Transform backend product to frontend format (matches actual table schema)
   const transformBackendProduct = (backendProduct: any): Product => {
+    console.log('💾 Backend product images debug:', {
+      'backendProduct.images': backendProduct.images,
+      'backendProduct.image': backendProduct.image,
+      'images_length': backendProduct.images?.length || 0
+    })
+    
     return {
       id: backendProduct.id,
       sellerId: backendProduct.seller_id,
@@ -94,9 +100,11 @@ export const useProducts = () => {
       additional_notes: frontendProduct.additionalNotes || null,
       price_change: frontendProduct.priceChange || 0,
       
-      // Images
-      image: frontendProduct.image || null,
-      images: frontendProduct.image ? [frontendProduct.image] : (frontendProduct.images || []),
+      // Images - prioritize images array over single image
+      image: frontendProduct.images?.[0] || frontendProduct.image || null,
+      images: frontendProduct.images && frontendProduct.images.length > 0 
+        ? frontendProduct.images 
+        : (frontendProduct.image ? [frontendProduct.image] : []),
       
       // Timestamps
       last_updated: new Date().toISOString(),
@@ -104,6 +112,12 @@ export const useProducts = () => {
     }
     
     console.log('🔄 Frontend to backend transform (matches table schema):', transformed)
+    console.log('🖼️ Images debug:', {
+      'frontendProduct.images': frontendProduct.images,
+      'frontendProduct.image': frontendProduct.image,
+      'transformed.images': transformed.images,
+      'images_length': transformed.images?.length || 0
+    })
     return transformed
   }
 
