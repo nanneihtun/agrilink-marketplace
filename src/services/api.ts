@@ -46,9 +46,31 @@ export const authAPI = {
 
       console.log('✅ Auth user created:', authData.user.id)
 
-      // Then create the profile in the users table
-      try {
-        const { data: profileData, error: profileError } = await supabaseClient
+      // Check if profile already exists (from previous failed attempt)
+      const { data: existingProfile } = await supabaseClient
+        .from('users')
+        .select('id')
+        .eq('id', authData.user.id)
+        .single()
+
+      let profileData
+      if (existingProfile) {
+        console.log('✅ Profile already exists, using existing profile')
+        // Get the full existing profile
+        const { data: fullProfile, error: fetchError } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single()
+        
+        if (fetchError) {
+          throw new Error(`Failed to fetch existing profile: ${fetchError.message}`)
+        }
+        profileData = fullProfile
+      } else {
+        console.log('🔄 Creating new profile...')
+        // Create new profile in the users table
+        const { data: newProfile, error: profileError } = await supabaseClient
           .from('users')
           .insert({
             id: authData.user.id,
@@ -75,36 +97,17 @@ export const authAPI = {
 
         if (profileError) {
           console.error('❌ Profile creation failed:', profileError)
-          
-          // CRITICAL: Clean up the auth user if profile creation fails
-          console.log('🧹 Cleaning up auth user due to profile creation failure...')
-          try {
-            await supabaseClient.auth.admin.deleteUser(authData.user.id)
-            console.log('✅ Auth user cleaned up successfully')
-          } catch (cleanupError) {
-            console.error('⚠️ Failed to cleanup auth user:', cleanupError)
-          }
-          
           throw new Error(`Profile creation failed: ${profileError.message}`)
         }
+        profileData = newProfile
+      }
 
-        console.log('✅ Profile created successfully:', profileData.id)
+      console.log('✅ Profile ready:', profileData.id)
 
-        return {
-          user: authData.user,
-          session: authData.session,
-          profile: profileData
-        }
-      } catch (profileError) {
-        // If profile creation fails, clean up auth user
-        console.log('🧹 Cleaning up auth user due to profile creation error...')
-        try {
-          await supabaseClient.auth.admin.deleteUser(authData.user.id)
-          console.log('✅ Auth user cleaned up successfully')
-        } catch (cleanupError) {
-          console.error('⚠️ Failed to cleanup auth user:', cleanupError)
-        }
-        throw profileError
+      return {
+        user: authData.user,
+        session: authData.session,
+        profile: profileData
       }
     } catch (error) {
       console.error('❌ Sign up API error:', error)
