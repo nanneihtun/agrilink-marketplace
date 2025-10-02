@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { OTPVerification } from "./OTPVerification";
+import { PhoneVerification } from "./PhoneVerification";
 import { 
   ArrowLeft, 
   CheckCircle, 
@@ -201,6 +202,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   // All phone verification state
   const [showPhoneDetail, setShowPhoneDetail] = useState(false);
   const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(currentUser.phone || '');
   const [originalPhoneNumber] = useState(currentUser.phone || '');
   
@@ -521,6 +523,45 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         onBack={() => setShowOTPVerification(false)}
         isDemo={true}
       />
+    );
+  }
+
+  // If showing new phone verification, render that instead
+  if (showPhoneVerification) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Phone className="w-5 h-5 text-primary" />
+              </div>
+              <h1 className="text-xl font-semibold text-primary">Phone Verification</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Verify your phone number with Supabase backend integration
+            </p>
+          </div>
+        </div>
+
+        <PhoneVerification
+          currentUser={currentUser}
+          onVerificationComplete={(verifiedPhoneNumber) => {
+            // Update user state with verified phone
+            onUpdate({
+              ...currentUser,
+              phone: verifiedPhoneNumber,
+              phoneVerified: true,
+              phoneVerificationDate: new Date().toISOString()
+            });
+            
+            // Go back to main verification view
+            setShowPhoneVerification(false);
+          }}
+          onBack={() => setShowPhoneVerification(false)}
+        />
+      </div>
     );
   }
 
@@ -1172,6 +1213,18 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                 >
                   {currentUser.phoneVerified ? 'Complete' : 'Required'}
                 </Badge>
+                
+                {/* New Supabase Phone Verification Button */}
+                {!currentUser.phoneVerified && (
+                  <Button 
+                    size="sm"
+                    onClick={() => setShowPhoneVerification(true)}
+                    className="text-xs px-3 py-2 bg-primary text-white hover:bg-primary/90"
+                  >
+                    Verify with Supabase
+                  </Button>
+                )}
+                
                 <Button 
                   variant="ghost" 
                   size="sm"
