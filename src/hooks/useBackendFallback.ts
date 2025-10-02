@@ -31,7 +31,7 @@ export const useBackendFallback = () => {
         
         // Test connection with a simple query
         const { data, error } = await supabase
-          .from('users')
+          .from('users_simplified')
           .select('count')
           .limit(1)
 
