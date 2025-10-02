@@ -15,6 +15,7 @@ export const authAPI = {
     password: string
     name: string
     userType: 'farmer' | 'trader' | 'buyer'
+    accountType?: 'individual' | 'business'
     location: string
     phone?: string
     businessName?: string
@@ -48,6 +49,7 @@ export const authAPI = {
           email: userData.email,
           name: userData.name,
           user_type: userData.userType,
+          account_type: userData.accountType || 'individual', // Add required field with default
           location: userData.location,
           phone: userData.phone,
           business_name: userData.businessName,
