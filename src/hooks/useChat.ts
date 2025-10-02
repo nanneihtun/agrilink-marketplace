@@ -132,7 +132,7 @@ export const useChat = () => {
         conversationId: msg.conversation_id,
         senderId: msg.sender_id,
         content: msg.content,
-        timestamp: msg.created_at,
+        timestamp: new Date(msg.created_at).toISOString(),
         type: msg.type || 'text',
         isRead: msg.is_read || false,
         offerDetails: msg.offer_details ? JSON.parse(msg.offer_details) : undefined
@@ -193,7 +193,7 @@ export const useChat = () => {
         conversationId: messageData.conversation_id,
         senderId: messageData.sender_id,
         content: messageData.content,
-        timestamp: messageData.created_at,
+        timestamp: new Date(messageData.created_at).toISOString(),
         type: messageData.type || 'text',
         isRead: false,
         offerDetails: messageData.offer_details ? JSON.parse(messageData.offer_details) : undefined
