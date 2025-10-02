@@ -263,6 +263,7 @@ export default function App() {
       let hiddenSampleProducts: string[] = [];
       
       // Use backend products if available, combined with local products
+      if (backendProducts.length > 0) {
         return [...backendProducts, ...localProducts];
       }
       
