@@ -45,12 +45,11 @@ export const useAuth = () => {
     
     try {
       console.log('🔄 Clean signup process started for:', userData.email);
-      console.log('📋 Form data:', {
-        name: userData.name,
-        userType: userData.userType,
-        accountType: userData.accountType,
-        location: userData.location
-      });
+      console.log('📋 Form data received:');
+      console.log('  - Name:', userData.name);
+      console.log('  - UserType:', userData.userType);
+      console.log('  - AccountType:', userData.accountType);
+      console.log('  - Location:', userData.location);
 
       // 1. Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -91,25 +90,52 @@ export const useAuth = () => {
         updated_at: new Date().toISOString()
       };
 
-      console.log('📝 Creating profile with data:', {
-        name: profileData.name,
-        user_type: profileData.user_type,
-        account_type: profileData.account_type,
-        location: profileData.location
-      });
+      console.log('📝 Creating profile with data:');
+      console.log('  - Name:', profileData.name);
+      console.log('  - User Type:', profileData.user_type);
+      console.log('  - Account Type:', profileData.account_type);
+      console.log('  - Location:', profileData.location);
 
-      const { data: profile, error: profileError } = await supabase
+      // Try to insert, if duplicate key error then update existing
+      let profile;
+      const { data: insertData, error: insertError } = await supabase
         .from('users')
         .insert(profileData)
         .select()
         .single();
 
-      if (profileError) {
-        console.error('❌ Profile creation failed:', profileError);
-        throw new Error(`Profile creation failed: ${profileError.message}`);
-      }
+      if (insertError && insertError.code === '23505') {
+        // Duplicate key error - update existing profile instead
+        console.log('⚠️ User already exists, updating with new form data');
+        const { data: updateData, error: updateError } = await supabase
+          .from('users')
+          .update({
+            name: profileData.name,
+            user_type: profileData.user_type,
+            account_type: profileData.account_type,
+            location: profileData.location,
+            phone: profileData.phone,
+            business_name: profileData.business_name,
+            business_description: profileData.business_description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', authData.user.id)
+          .select()
+          .single();
 
-      console.log('✅ Profile created successfully:', profile.id);
+        if (updateError) {
+          console.error('❌ Profile update failed:', updateError);
+          throw new Error(`Profile update failed: ${updateError.message}`);
+        }
+        profile = updateData;
+        console.log('✅ Profile updated with new form data');
+      } else if (insertError) {
+        console.error('❌ Profile creation failed:', insertError);
+        throw new Error(`Profile creation failed: ${insertError.message}`);
+      } else {
+        profile = insertData;
+        console.log('✅ New profile created successfully');
+      }
 
       return { user: authData.user, session: authData.session, profile };
 
