@@ -210,6 +210,20 @@ if (typeof window !== "undefined") {
     updateProfile,
   } = useAuth();
   
+  // Debug current user state for chat troubleshooting
+  useEffect(() => {
+    if (currentUser) {
+      console.log('🔍 App.tsx currentUser:', {
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name,
+        authLoading
+      });
+    } else {
+      console.log('🔍 App.tsx currentUser: null, authLoading:', authLoading);
+    }
+  }, [currentUser?.id, authLoading]);
+  
   const {
     products,
     loading: productsLoading,
