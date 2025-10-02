@@ -151,142 +151,6 @@ export default function App() {
 
   // No demo accounts needed - using Supabase backend
 
-      const demoUsers = [
-        {
-          id: `admin-${Date.now()}`,
-          email: 'admin@agrilink.com',
-          password: 'admin123',
-          name: 'System Administrator',
-          userType: 'admin',
-          accountType: 'business',
-          location: 'Yangon',
-          region: 'Yangon Region',
-          phone: '+95 9 123 456 789',
-          businessName: 'AgriLink Administration',
-          businessDescription: 'Platform administration and verification management',
-          experience: '5 years',
-          verified: true,
-          phoneVerified: true,
-          qualityCertifications: [],
-          farmingMethods: [],
-          joinedDate: new Date().toISOString(),
-          rating: 5.0,
-          totalReviews: 0
-        },
-        // Sample product sellers - these match the sample products
-        {
-          id: 'farmer-thura-001',
-          email: 'thura.farmer@gmail.com',
-          password: 'farmer123',
-          name: 'Ko Thura Min',
-          userType: 'farmer',
-          accountType: 'individual',
-          location: 'Bago',
-          region: 'Bago Region',
-          phone: '+95 9 987 654 321',
-          businessName: 'Thura Min Rice Farm',
-          businessDescription: 'Premium jasmine rice cultivation with traditional methods',
-          experience: '15 years',
-          verified: true,
-          phoneVerified: true,
-          qualityCertifications: ['Organic Certified'],
-          farmingMethods: ['Traditional', 'Sustainable'],
-          joinedDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
-          rating: 4.8,
-          totalReviews: 24
-        },
-        {
-          id: 'farmer-su-002',
-          email: 'su.vegetables@gmail.com',
-          password: 'farmer123',
-          name: 'Ma Su Hlaing',
-          userType: 'farmer',
-          accountType: 'individual',
-          location: 'Mandalay',
-          region: 'Mandalay Region',
-          phone: '+95 9 876 543 210',
-          businessName: 'Su Hlaing Organic Farm',
-          businessDescription: 'Fresh organic vegetables and seasonal produce',
-          experience: '8 years',
-          verified: true,
-          phoneVerified: true,
-          qualityCertifications: ['Organic Certified'],
-          farmingMethods: ['Organic', 'Hydroponic'],
-          joinedDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
-          rating: 4.7,
-          totalReviews: 31
-        },
-        {
-          id: 'trader-kyaw-003',
-          email: 'kyaw.trader@gmail.com',
-          password: 'trader123',
-          name: 'Ko Kyaw Zin',
-          userType: 'trader',
-          accountType: 'business',
-          location: 'Yangon',
-          region: 'Yangon Region',
-          phone: '+95 9 765 432 109',
-          businessName: 'Kyaw Zin Spice Trading',
-          businessDescription: 'Premium spices and agricultural processing',
-          experience: '12 years',
-          verified: true,
-          phoneVerified: true,
-          qualityCertifications: ['Licensed Trader', 'Export Certified'],
-          farmingMethods: [],
-          joinedDate: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString(),
-          rating: 4.6,
-          totalReviews: 18
-        },
-        {
-          id: 'farmer-min-004',
-          email: 'min.fruits@gmail.com',
-          password: 'farmer123',
-          name: 'Ko Min Oo',
-          userType: 'farmer',
-          accountType: 'individual',
-          location: 'Magway',
-          region: 'Magway Region',
-          phone: '+95 9 654 321 098',
-          businessName: 'Min Oo Exotic Fruits',
-          businessDescription: 'Tropical and exotic fruit cultivation',
-          experience: '10 years',
-          verified: true,
-          phoneVerified: true,
-          qualityCertifications: ['Export Quality'],
-          farmingMethods: ['Controlled Environment', 'Sustainable'],
-          joinedDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-          rating: 4.9,
-          totalReviews: 42
-        },
-        // Test buyer account
-        {
-          id: `buyer-${Date.now()}`,
-          email: 'buyer.test@gmail.com',
-          password: 'buyer123',
-          name: 'Ma Phyu Phyu',
-          userType: 'buyer',
-          accountType: 'individual',
-          location: 'Yangon',
-          region: 'Yangon Region',
-          phone: '+95 9 543 210 987',
-          businessName: '',
-          businessDescription: '',
-          experience: '2 years',
-          verified: false,
-          phoneVerified: true,
-          qualityCertifications: [],
-          farmingMethods: [],
-          joinedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          rating: 0,
-          totalReviews: 0,
-          preferences: {
-            categories: ['Rice', 'Vegetables', 'Fruits'],
-            priceRange: 'budget',
-            deliveryRadius: 50
-          }
-        }
-      ];
-
 
   const [showVerification, setShowVerification] =
     useState(false);
@@ -511,40 +375,7 @@ export default function App() {
 
   // Initialize app - Supabase backend handles all data
   useEffect(() => {
-    // Clean up old local storage data from testing
-    const oldStorageKeys = [
-      'agriconnect-myanmar-users',
-      'agriconnect-myanmar-local-products',
-      'agriconnect-myanmar-user-products',
-      'agriconnect-myanmar-saved-products',
-      'agriconnect-myanmar-current-user',
-      'agriconnect-myanmar-offers',
-      'agriconnect-myanmar-reviews',
-      'agriconnect-myanmar-conversations',
-      'agriconnect-myanmar-messages',
-      'agriconnect-myanmar-hidden-sample-products'
-    ];
-    
-    oldStorageKeys.forEach(key => {
-      if (localStorage.getItem(key)) {
-        localStorage.removeItem(key);
-        console.log('🧹 Cleaned up old storage:', key);
-      }
-    });
-    
-    // Check for email confirmation success
-    const urlParams = new URLSearchParams(window.location.search);
-    const emailConfirmed = urlParams.get('email_confirmed');
-    
-    if (emailConfirmed === 'true') {
-      toast.success("Email confirmed successfully! You can now sign in to your account.", {
-        duration: 6000,
-      });
-      
-      // Clean up URL
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
+    // App initialization complete
   }, []);
 
 
@@ -575,53 +406,25 @@ export default function App() {
       try {
         await signIn(email, password);
         setAuthModal(null);
-        
-        // Show success message
-        toast.success("Login successful! Welcome to AgriLink Marketplace!");
-        
-        // If user was on login page, redirect to marketplace after successful login
-        if (currentView === "login") {
-          setCurrentView("marketplace");
-        }
       } catch (error) {
         console.error("Login failed:", error);
         throw error;
       }
     },
-    [signIn, currentView, setCurrentView],
+    [signIn],
   );
 
   const handleRegister = useCallback(
     async (userData: any) => {
       try {
-        const result = await signUp(userData);
+        await signUp(userData);
         setAuthModal(null);
-        
-        // Check if email confirmation is required
-        if (result?.user && !result.user.email_confirmed_at) {
-          // Email confirmation required
-          toast.success("Registration successful! Please check your email and click the confirmation link to activate your account.", {
-            duration: 8000, // Show longer for important message
-          });
-          
-          // Redirect to login page with a special state
-          if (currentView === "register") {
-            setCurrentView("login");
-          }
-        } else {
-          // No email confirmation needed (if disabled in Supabase)
-          toast.success("Registration successful! You can now sign in.");
-          
-          if (currentView === "register") {
-            setCurrentView("login");
-          }
-        }
       } catch (error) {
         console.error("Registration failed:", error);
         throw error;
       }
     },
-    [signUp, currentView, setCurrentView],
+    [signUp],
   );
 
   const handleLogout = useCallback(async () => {
@@ -1074,15 +877,33 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Welcome message for new users */}
+                  {/* Demo Account Helper - For Development/Testing */}
                   {!currentUser && (
-                    <div className="bg-muted/50 border rounded-lg p-4 text-center">
-                      <p className="text-sm text-muted-foreground mb-3">
-                        👋 Welcome to AgriLink Marketplace
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Register or sign in to start buying and selling agricultural products
-                      </p>
+                    <div className="bg-muted/50 border rounded-lg p-4">
+                      <div className="text-center mb-4">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          🔧 Development Mode: Test different user types
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={createDemoAccounts}
+                          className="text-xs"
+                        >
+                          Create Demo Accounts
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Creates sample sellers and buyers for testing
+                        </p>
+                      </div>
+                      
+                      <div className="text-left text-xs space-y-1 bg-card p-3 rounded border">
+                        <p className="font-medium mb-2">Quick Login Credentials:</p>
+                        <p><strong>Admin:</strong> admin@agrilink.com / admin123</p>
+                        <p><strong>Farmer:</strong> thura.farmer@gmail.com / farmer123</p>
+                        <p><strong>Trader:</strong> kyaw.trader@gmail.com / trader123</p>
+                        <p><strong>Buyer:</strong> buyer.test@gmail.com / buyer123</p>
+                      </div>
                     </div>
                   )}
 

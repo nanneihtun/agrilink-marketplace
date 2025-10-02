@@ -217,7 +217,9 @@ export const useAuth = () => {
   const signOut = useCallback(async () => {
     try {
       if (backendAvailable) {
-        await supabase.auth.signOut()
+        // Use centralized authAPI.signOut
+        const { authAPI } = await import('../services/api')
+        await authAPI.signOut()
       }
       
       setUser(null)

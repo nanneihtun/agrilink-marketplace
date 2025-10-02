@@ -33,10 +33,9 @@ export function Login({ onLogin, onSwitchToRegister, onForgotPassword, onClose }
 
     try {
       await onLogin(formData.email, formData.password);
-      console.log('✅ Login successful');
       onClose();
     } catch (err: any) {
-      console.error('❌ Login error:', err);
+      console.error('Login failed:', err);
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
