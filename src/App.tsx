@@ -1219,33 +1219,8 @@ if (typeof window !== "undefined") {
 
             return (
               <>
-                {/* Mobile: Full screen overlay */}
-                <div className="fixed inset-0 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300 md:hidden">
-                  <ChatInterface
-                    key="mobile-chat"
-                    sellerName={selectedProduct.sellerName}
-                    sellerType={selectedProduct.sellerType}
-                    sellerLocation={selectedProduct.location}
-                    currentUser={currentUser}
-                    sellerRating={4.5}
-                    productName={selectedProduct.name}
-                    productId={selectedProduct.id}
-                    sellerId={selectedProduct.sellerId}
-                    onClose={() => setSelectedChat(null)}
-                    sellerVerified={seller?.verified || false}
-                    currentUserVerified={
-                      currentUser?.verified || false
-                    }
-                    currentUserType={currentUser?.userType}
-                    sellerVerificationStatus={
-                      sellerVerificationStatus
-                    }
-                    product={selectedProduct}
-                  />
-                </div>
-
                 {/* Desktop: Side panel */}
-                <div className="hidden md:block fixed right-0 bottom-0 h-[600px] w-96 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300">
+                <div className="fixed right-0 bottom-0 h-[600px] w-96 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300">
                   <ChatInterface
                     key="desktop-chat"
                     sellerName={selectedProduct.sellerName}
