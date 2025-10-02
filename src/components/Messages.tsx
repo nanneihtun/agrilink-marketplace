@@ -206,7 +206,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   }, [currentUser]);
   
   // Use real chat data with the effective current user
-  const { conversations, messages, loading, fetchConversations, error } = useChat(effectiveCurrentUser?.id);
+  const { conversations, messages, loading, loadConversations, error } = useChat(effectiveCurrentUser?.id);
   
   // Initialize debug logging once
   useEffect(() => {
@@ -219,11 +219,11 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   useEffect(() => {
     if (effectiveCurrentUser?.id) {
       console.log('🔄 Initializing conversations for user:', effectiveCurrentUser.email);
-      fetchConversations();
+      loadConversations(effectiveCurrentUser.id);
     } else {
       console.log('⚠️ Cannot initialize conversations - no effective current user');
     }
-  }, [effectiveCurrentUser?.id, fetchConversations]);
+  }, [effectiveCurrentUser?.id, loadConversations]);
 
   // Get storage statistics for debugging - simplified
   useEffect(() => {
@@ -438,7 +438,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                     size="sm"
                     onClick={() => {
                       clearAllConversations();
-                      fetchConversations();
+                      loadConversations(effectiveCurrentUser.id);
                     }}
                     className="text-xs text-amber-600 hover:text-amber-700"
                   >
@@ -539,7 +539,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={fetchConversations}
+              onClick={() => loadConversations(effectiveCurrentUser?.id)}
               className="mt-2"
             >
               Retry
