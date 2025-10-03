@@ -374,7 +374,16 @@ export function ChatInterface({
 
   // Format timestamp for display
   const formatTimestamp = (timestamp: string) => {
+    if (!timestamp) return 'Just now';
+    
     const date = new Date(timestamp);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp:', timestamp);
+      return 'Just now';
+    }
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -610,7 +619,7 @@ export function ChatInterface({
                     >
                       <p className="text-sm">{message.content}</p>
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs opacity-70">{formatTimestamp(message.createdAt)}</p>
+                        <p className="text-xs opacity-70">{formatTimestamp(message.timestamp)}</p>
                         {message.senderId === effectiveCurrentUser?.id && message.status && (
                           <span className="text-xs opacity-70 ml-2">
                             {message.status === 'sending' ? '⏳' : 

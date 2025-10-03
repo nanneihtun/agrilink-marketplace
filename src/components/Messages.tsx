@@ -259,7 +259,16 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   }, [debugMode]); // Only depend on debugMode
 
   const formatTimeAgo = (timestamp: string) => {
+    if (!timestamp) return 'Just now';
+    
     const date = new Date(timestamp);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp in Messages:', timestamp);
+      return 'Just now';
+    }
+    
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -321,11 +330,11 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
         },
         lastMessage: lastMessage ? {
           content: lastMessage.content,
-          timestamp: lastMessage.createdAt,
+          timestamp: lastMessage.timestamp,
           isOwn: lastMessage.senderId === effectiveCurrentUser?.id
         } : {
           content: 'No messages yet',
-          timestamp: conv.updatedAt,
+          timestamp: conv.lastMessageTime || conv.createdAt,
           isOwn: false
         },
         unreadCount,
@@ -782,6 +791,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerVerified={conversation.otherParty.verified}
                 currentUserVerified={effectiveCurrentUser?.verified || false}
                 currentUserType={effectiveCurrentUser?.userType}
+                currentUser={effectiveCurrentUser}
                 sellerVerificationStatus={{
                   trustLevel: conversation.otherParty.verified ? 'id-verified' : 'unverified',
                   tierLabel: conversation.otherParty.verified ? 'Verified' : 'Unverified',
@@ -805,6 +815,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerVerified={conversation.otherParty.verified}
                 currentUserVerified={effectiveCurrentUser?.verified || false}
                 currentUserType={effectiveCurrentUser?.userType}
+                currentUser={effectiveCurrentUser}
                 sellerVerificationStatus={{
                   trustLevel: conversation.otherParty.verified ? 'id-verified' : 'unverified',
                   tierLabel: conversation.otherParty.verified ? 'Verified' : 'Unverified',
