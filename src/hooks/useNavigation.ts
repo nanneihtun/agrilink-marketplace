@@ -15,6 +15,7 @@ type ViewType =
   | "messages"
   | "verification"
   | "admin-verification"
+  | "admin-dashboard"
   | "about-us"
   | "contact-us"
   | "faq";
@@ -64,7 +65,7 @@ export function useNavigation({
     ) {
       setCurrentView("dashboard");
     } else if (currentUser?.userType === "admin") {
-      setCurrentView("marketplace"); // Admins use marketplace as their dashboard with admin controls
+      setCurrentView("admin-dashboard"); // Admins go to admin dashboard
     } else {
       setCurrentView("marketplace");
     }

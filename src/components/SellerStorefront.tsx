@@ -37,6 +37,10 @@ import {
   Leaf,
   Facebook,
   Instagram,
+  Music,
+  Video,
+  MessageSquare,
+  Play,
   Globe
 } from "lucide-react";
 
@@ -116,7 +120,8 @@ export function SellerStorefront({
     website: (seller as any).website || '',
     facebook: (seller as any).facebook || '',
     instagram: (seller as any).instagram || '',
-    telegram: (seller as any).telegram || '',
+    whatsapp: (seller as any).whatsapp || '',
+    tiktok: (seller as any).tiktok || '',
     specialties: (seller as any).specialties || [],
     policies: (seller as any).policies || {
       returns: '',
@@ -156,7 +161,7 @@ export function SellerStorefront({
       website: (seller as any).website || '',
       facebook: (seller as any).facebook || '',
       instagram: (seller as any).instagram || '',
-      telegram: (seller as any).telegram || '',
+      whatsapp: (seller as any).whatsapp || '',
       specialties: (seller as any).specialties || [],
       policies: (seller as any).policies || {
         returns: '',
@@ -592,7 +597,7 @@ export function SellerStorefront({
                 )}
 
                 {/* Social Media Links - Always show for own storefront, or if there are existing links */}
-                {((storefrontData.facebook || storefrontData.instagram || storefrontData.telegram) || (isOwnStorefront && !previewMode)) && (
+                {((storefrontData.facebook || storefrontData.instagram || storefrontData.whatsapp || storefrontData.tiktok) || (isOwnStorefront && !previewMode)) && (
                   <>
                     <Separator className="my-4" />
                     <div className="space-y-3">
@@ -601,7 +606,7 @@ export function SellerStorefront({
                         Social Media & Online Presence
                       </h4>
                       
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col gap-3">
                         {/* Facebook */}
                         {(storefrontData.facebook || (isOwnStorefront && !previewMode)) && (
                           <>
@@ -646,16 +651,19 @@ export function SellerStorefront({
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEditing('facebook', '')}
-                                  className="flex items-center gap-2 h-10 px-3"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <Facebook className="w-4 h-4" />
-                                  Add Facebook
-                                </Button>
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 border border-blue-200">
+                                  <Facebook className="w-5 h-5 text-blue-600" />
+                                </div>
+                                {isOwnStorefront && !previewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing('facebook', storefrontData.facebook || '')}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </>
@@ -705,34 +713,37 @@ export function SellerStorefront({
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEditing('instagram', '')}
-                                  className="flex items-center gap-2 h-10 px-3"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                  <Instagram className="w-4 h-4" />
-                                  Add Instagram
-                                </Button>
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-pink-50 border border-pink-200">
+                                  <Instagram className="w-5 h-5 text-pink-600" />
+                                </div>
+                                {isOwnStorefront && !previewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing('instagram', storefrontData.instagram || '')}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </>
                         )}
 
-                        {/* Telegram */}
-                        {(storefrontData.telegram || (isOwnStorefront && !previewMode)) && (
+                        {/* WhatsApp */}
+                        {(storefrontData.whatsapp || (isOwnStorefront && !previewMode)) && (
                           <>
-                            {editing?.field === 'telegram' ? (
+                            {editing?.field === 'whatsapp' ? (
                               <div className="flex-1 space-y-2">
                                 <Input
                                   value={editing.value}
                                   onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                                  placeholder="@yourusername or t.me/yourusername"
+                                  placeholder="+1234567890 or wa.me/1234567890"
                                   autoFocus
                                 />
                                 <div className="flex gap-2">
-                                  <Button size="sm" onClick={() => handleSave('telegram', editing.value)}>
+                                  <Button size="sm" onClick={() => handleSave('whatsapp', editing.value)}>
                                     <Save className="w-4 h-4 mr-1" />
                                     Save
                                   </Button>
@@ -741,21 +752,21 @@ export function SellerStorefront({
                                   </Button>
                                 </div>
                               </div>
-                            ) : storefrontData.telegram ? (
+                            ) : storefrontData.whatsapp ? (
                               <div className="flex items-center gap-1">
                                 <a 
-                                  href={storefrontData.telegram.startsWith('http') ? storefrontData.telegram : `https://t.me/${storefrontData.telegram.replace('@', '').replace('t.me/', '')}`}
+                                  href={storefrontData.whatsapp.startsWith('http') ? storefrontData.whatsapp : `https://wa.me/${storefrontData.whatsapp.replace('+', '').replace('whatsapp.com/', '').replace('wa.me/', '')}`}
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 transition-colors group"
+                                  className="flex items-center justify-center w-10 h-10 rounded-full bg-green-50 hover:bg-green-100 transition-colors group"
                                 >
-                                  <MessageCircle className="w-5 h-5 text-blue-500 group-hover:text-blue-600" />
+                                  <MessageSquare className="w-5 h-5 text-green-600 group-hover:text-green-700" />
                                 </a>
                                 {isOwnStorefront && !previewMode && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => startEditing('telegram', storefrontData.telegram)}
+                                    onClick={() => startEditing('whatsapp', storefrontData.whatsapp)}
                                     className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
                                   >
                                     <Edit className="w-3 h-3" />
@@ -764,16 +775,81 @@ export function SellerStorefront({
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEditing('telegram', '')}
-                                  className="flex items-center gap-2 h-10 px-3"
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-50 border border-green-200">
+                                  <MessageSquare className="w-5 h-5 text-green-600" />
+                                </div>
+                                {isOwnStorefront && !previewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing('whatsapp', storefrontData.whatsapp || '')}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {/* TikTok */}
+                        {(storefrontData.tiktok || (isOwnStorefront && !previewMode)) && (
+                          <>
+                            {editing?.field === 'tiktok' ? (
+                              <div className="flex-1 space-y-2">
+                                <Input
+                                  value={editing.value}
+                                  onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+                                  placeholder="Enter TikTok username or URL"
+                                  className="text-sm"
+                                />
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={() => handleSave('tiktok')}>
+                                    <Save className="w-3 h-3 mr-1" />
+                                    Save
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={cancelEditing}>
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : storefrontData.tiktok ? (
+                              <div className="flex items-center gap-1">
+                                <a 
+                                  href={storefrontData.tiktok.startsWith('http') ? storefrontData.tiktok : `https://tiktok.com/@${storefrontData.tiktok.replace('@', '').replace('tiktok.com/', '')}`}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-center w-10 h-10 rounded-full bg-black hover:bg-gray-800 transition-colors group"
                                 >
-                                  <Plus className="w-4 h-4" />
-                                  <MessageCircle className="w-4 h-4" />
-                                  Add Telegram
-                                </Button>
+                                  <Play className="w-5 h-5 text-white group-hover:text-gray-200" />
+                                </a>
+                                {isOwnStorefront && !previewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing('tiktok', storefrontData.tiktok)}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-black border border-gray-300">
+                                  <Play className="w-5 h-5 text-white" />
+                                </div>
+                                {isOwnStorefront && !previewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing('tiktok', storefrontData.tiktok || '')}
+                                    className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </>
@@ -784,7 +860,7 @@ export function SellerStorefront({
                 )}
 
                 {/* Empty state for edit mode */}
-                {isOwnStorefront && !previewMode && !storefrontData.phone && !storefrontData.email && !storefrontData.website && !storefrontData.facebook && !storefrontData.instagram && !storefrontData.telegram && (
+                {isOwnStorefront && !previewMode && !storefrontData.phone && !storefrontData.email && !storefrontData.website && !storefrontData.facebook && !storefrontData.instagram && !storefrontData.whatsapp && !storefrontData.tiktok && (
                   <div className="text-center py-4 text-sm text-muted-foreground bg-muted/30 rounded-lg">
                     <Phone className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="font-medium">Add contact information</p>

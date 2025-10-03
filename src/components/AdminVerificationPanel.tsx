@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -8,7 +8,6 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-// No StorageDebugPanel needed with Supabase
 import { 
   CheckCircle, 
   XCircle, 
@@ -19,9 +18,12 @@ import {
   FileText, 
   Eye,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "../lib/supabase";
 import { products as sampleProducts } from "../data/products";
 
 interface VerificationRequest {
@@ -30,50 +32,55 @@ interface VerificationRequest {
   userEmail: string;
   userName: string;
   userType: 'farmer' | 'trader' | 'buyer';
-  type: 'id' | 'business' | 'buyer'; // New split verification types
-  requestType?: 'tier1' | 'tier2' | 'buyer'; // Legacy support
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
-  reviewNotes?: string;
-  adminNotes?: string;
-  documents: {
-    nationalId?: string | {
+  accountType: 'individual' | 'business';
+  verificationStatus: 'not_started' | 'in_progress' | 'under_review' | 'verified' | 'rejected';
+  verificationSubmitted: boolean;
+  verificationDocuments?: {
+    idCard?: {
       front?: string;
       back?: string;
-      status: 'pending' | 'verified' | 'rejected';
+      status?: 'pending' | 'verified' | 'rejected';
+      name?: string;
+    };
+    businessLicense?: {
+      document?: string;
+      status?: 'pending' | 'verified' | 'rejected';
+      name?: string;
     };
     selfieWithId?: string;
-    businessLicense?: string | {
-      document?: string;
-      status: 'pending' | 'verified' | 'rejected';
-    };
     taxCertificate?: string;
     bankStatement?: string;
     farmCertification?: {
       document?: string;
-      status: 'pending' | 'verified' | 'rejected';
+      status?: 'pending' | 'verified' | 'rejected';
     };
   };
-  additionalInfo?: {
-    fullName?: string;
-    phoneNumber?: string;
-    address?: string;
-    businessName?: string;
-    businessType?: string;
-    taxId?: string;
-    businessAddress?: string;
-    yearsInBusiness?: string;
-    employeeCount?: string;
-  };
+  businessDetailsCompleted: boolean;
+  businessName?: string;
+  businessDescription?: string;
+  location?: string;
+  region?: string;
+  phone?: string;
+  phoneVerified?: boolean;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewNotes?: string;
+  // Additional properties used in the component
+  type?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  documents?: any;
   businessInfo?: {
     businessName?: string;
-    businessType?: string;
     businessDescription?: string;
     location?: string;
+    region?: string;
+    phone?: string;
+    phoneVerified?: boolean;
+    businessType?: string;
     registrationNumber?: string;
   };
+  adminNotes?: string;
 }
 
 // Sample Product Management Component
@@ -248,15 +255,154 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
 
   // Load verification requests from localStorage
   useEffect(() => {
-    const loadRequests = () => {
+    const loadRequests = async () => {
       try {
-        const storedRequests = localStorage.getItem('agriconnect-verification-requests');
-        if (storedRequests) {
-          const parsedRequests = JSON.parse(storedRequests);
-          setRequests(parsedRequests);
+        console.log('🔍 Loading verification requests from Supabase...');
+        
+        // First try a simple query to test connection
+        console.log('🔍 Testing basic Supabase connection...');
+        const { data: testData, error: testError } = await supabase
+          .from('users')
+          .select('id, email, name, verification_status')
+          .limit(5);
+
+        if (testError) {
+          console.error('❌ Basic connection test failed:', testError);
+          throw testError;
         }
+
+        console.log('✅ Basic connection test successful:', testData);
+        
+        // Debug: Check what verification_status values exist
+        const { data: statusCheck } = await supabase
+          .from('users')
+          .select('verification_status')
+          .limit(10);
+        console.log('🔍 Sample verification_status values:', statusCheck?.map(u => u.verification_status));
+
+        // Try to fetch users with verification requests
+        let users, error;
+        
+        try {
+          const result = await supabase
+            .from('users')
+            .select(`
+              id,
+              email,
+              name,
+              user_type,
+              account_type,
+              verification_status,
+              verification_documents,
+              business_name,
+              business_description,
+              location,
+              region,
+              phone,
+              phone_verified,
+              created_at,
+              updated_at
+            `)
+            .in('verification_status', ['pending', 'under_review', 'verified', 'rejected'])
+            .neq('user_type', 'admin')
+            .order('updated_at', { ascending: false });
+          
+          users = result.data;
+          error = result.error;
+        } catch (filterError) {
+          console.log('⚠️ Filter query failed, trying fallback approach...', filterError);
+          
+          // Fallback: fetch all users and filter in JavaScript
+          const fallbackResult = await supabase
+            .from('users')
+            .select(`
+              id,
+              email,
+              name,
+              user_type,
+              account_type,
+              verification_status,
+              verification_documents,
+              business_name,
+              business_description,
+              location,
+              region,
+              phone,
+              phone_verified,
+              created_at,
+              updated_at
+            `)
+            .order('updated_at', { ascending: false });
+          
+          users = fallbackResult.data?.filter(user => 
+            user.verification_status && 
+            user.verification_status !== 'not_started' &&
+            ['pending', 'under_review', 'verified', 'rejected'].includes(user.verification_status) &&
+            user.user_type !== 'admin'
+          ) || [];
+          error = fallbackResult.error;
+        }
+
+        if (error) {
+          console.error('❌ Error fetching verification requests:', error);
+          console.error('❌ Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          toast.error(`Failed to load verification requests: ${error.message}`);
+          return;
+        }
+
+        console.log('📊 Raw users data:', users);
+        
+        // Debug verification documents for each user
+        users.forEach((user, index) => {
+          console.log(`🔍 User ${index + 1} verification_documents:`, user.verification_documents);
+          console.log(`🔍 User ${index + 1} verification_documents type:`, typeof user.verification_documents);
+          console.log(`🔍 User ${index + 1} verification_documents keys:`, user.verification_documents ? Object.keys(user.verification_documents) : 'null/undefined');
+        });
+
+        // Transform database data to VerificationRequest format
+        const transformedRequests: VerificationRequest[] = users.map(user => ({
+          id: user.id,
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.name,
+          userType: user.user_type as 'farmer' | 'trader' | 'buyer',
+          accountType: user.account_type as 'individual' | 'business',
+          verificationStatus: user.verification_status as 'not_started' | 'in_progress' | 'under_review' | 'verified' | 'rejected',
+          verificationSubmitted: user.verification_status !== 'not_started', // True if verification has been started
+          status: user.verification_status === 'verified' ? 'approved' : 
+                  user.verification_status === 'rejected' ? 'rejected' : 'pending',
+          verificationDocuments: user.verification_documents || {},
+          businessDetailsCompleted: false, // Default value since column doesn't exist
+          businessName: user.business_name,
+          businessDescription: user.business_description,
+          location: user.location,
+          region: user.region,
+          phone: user.phone,
+          phoneVerified: user.phone_verified,
+          submittedAt: user.updated_at || user.created_at,
+          reviewedAt: user.verification_status === 'verified' || user.verification_status === 'rejected' ? user.updated_at : undefined,
+          reviewedBy: 'admin', // TODO: Track actual reviewer
+          reviewNotes: '',
+          adminNotes: ''
+        }));
+
+        console.log('✅ Transformed verification requests:', transformedRequests);
+        
+        // Debug the verification documents in transformed requests
+        transformedRequests.forEach((request, index) => {
+          console.log(`🔍 Transformed request ${index + 1} verificationDocuments:`, request.verificationDocuments);
+          console.log(`🔍 Transformed request ${index + 1} verificationDocuments keys:`, Object.keys(request.verificationDocuments || {}));
+        });
+        
+        setRequests(transformedRequests);
       } catch (error) {
-        console.error('Failed to load verification requests:', error);
+        console.error('❌ Failed to load verification requests:', error);
+        toast.error('Failed to load verification requests');
       }
     };
 
@@ -268,166 +414,79 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'approved': return 'bg-green-500';
+      case 'in_progress': return 'bg-blue-500';
+      case 'under_review': return 'bg-yellow-500';
+      case 'verified': return 'bg-green-500';
       case 'rejected': return 'bg-red-500';
+      case 'not_started': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
 
   const getRequestTypeLabel = (request: VerificationRequest) => {
-    // Handle new split verification system
-    if (request.type) {
-      switch (request.type) {
-        case 'id':
-          return 'ID Verification';
-        case 'business':
-          return 'Business Verification';
-        case 'buyer':
-          return 'Buyer Verification';
-        default:
-          return 'Unknown Verification Type';
-      }
+    const { userType, accountType, verificationStatus } = request;
+    
+    // Determine verification type based on user type and account type
+    if (userType === 'buyer') {
+      return 'Buyer Verification';
+    } else if (userType === 'farmer') {
+      return accountType === 'business' ? 'Business Farmer Verification' : 'Individual Farmer Verification';
+    } else if (userType === 'trader') {
+      return accountType === 'business' ? 'Business Trader Verification' : 'Individual Trader Verification';
     }
     
-    // Legacy support for old requestType field
-    const { requestType, userType } = request;
-    switch (requestType) {
-      case 'tier1':
-        return userType === 'trader' ? 'Tier 1 Trader Verification' : 'Basic Farmer Verification';
-      case 'tier2':
-        return userType === 'trader' ? 'Tier 2 Business Trader Verification' : 'Business Farmer Verification';
-      case 'buyer':
-        return 'Buyer Verification';
+    // Fallback based on verification status
+    switch (verificationStatus) {
+      case 'in_progress':
+        return 'Verification In Progress';
+      case 'under_review':
+        return 'Verification Under Review';
+      case 'verified':
+        return 'Verified Account';
+      case 'rejected':
+        return 'Verification Rejected';
       default:
-        return 'Unknown Verification Type';
+        return 'Verification Request';
     }
   };
 
   const handleApproveRequest = async (request: VerificationRequest) => {
     setIsProcessing(true);
     try {
-      // Update the request status
-      const updatedRequest = {
-        ...request,
-        status: 'approved' as const,
-        reviewedAt: new Date().toISOString(),
-        reviewedBy: currentAdmin.email,
-        reviewNotes: reviewNotes || 'Request approved',
-        documents: {
-          ...request.documents,
-          nationalId: request.documents.nationalId ? {
-            ...request.documents.nationalId,
-            status: 'verified' as const
-          } : undefined,
-          businessLicense: request.documents.businessLicense ? {
-            ...request.documents.businessLicense,
-            status: 'verified' as const
-          } : undefined,
-          farmCertification: request.documents.farmCertification ? {
-            ...request.documents.farmCertification,
-            status: 'verified' as const
-          } : undefined,
-        }
-      };
+      console.log('✅ Approving verification request:', request.id);
+      
+      // Update user verification status in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          verification_status: 'verified',
+          verified: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', request.userId);
 
-      // Update requests in localStorage
-      const updatedRequests = requests.map(r => 
-        r.id === request.id ? updatedRequest : r
-      );
-      localStorage.setItem('agriconnect-verification-requests', JSON.stringify(updatedRequests));
-      setRequests(updatedRequests);
-
-      // Update user verification status in demo accounts and main users
-      const updateUserVerification = (users: any[], storageKey: string) => {
-        const updatedUsers = users.map((account: any) => {
-          if (account.id === request.userId || account.email === request.userEmail) {
-            const updates: any = { ...account };
-
-            // Handle new split verification system
-            if (request.type === 'id') {
-              updates.verified = true;
-              updates.verificationStatus = 'verified';
-              updates.verificationDate = new Date().toISOString();
-              updates.verificationSubmitted = false; // Clear the submission flag
-              
-              // Update personal info from request
-              if (request.additionalInfo) {
-                if (request.additionalInfo.fullName) updates.name = request.additionalInfo.fullName;
-                if (request.additionalInfo.phoneNumber) updates.phone = request.additionalInfo.phoneNumber;
-                if (request.additionalInfo.address) updates.location = request.additionalInfo.address;
-              }
-            } 
-            else if (request.type === 'business') {
-              updates.businessVerified = true;
-              updates.verificationStatus = 'verified';
-              updates.verificationDate = new Date().toISOString();
-              updates.verificationSubmitted = false; // Clear the submission flag
-              updates.verificationDocuments = {
-                ...account.verificationDocuments,
-                businessLicense: 'verified'
-              };
-              
-              // Update business info from request
-              if (request.additionalInfo) {
-                if (request.additionalInfo.businessName) updates.businessName = request.additionalInfo.businessName;
-                if (request.additionalInfo.businessType) updates.businessType = request.additionalInfo.businessType;
-                if (request.additionalInfo.businessAddress) updates.location = request.additionalInfo.businessAddress;
-              }
-            }
-            // Legacy support for old system
-            else if (request.requestType) {
-              updates.verified = true;
-              updates.verificationStatus = 'verified';
-              updates.verificationDate = new Date().toISOString();
-              updates.verificationSubmitted = false; // Clear the submission flag
-
-              // Update verification documents for tier2/business verification
-              if (request.requestType === 'tier2' || request.requestType === 'buyer') {
-                updates.verificationDocuments = {
-                  ...account.verificationDocuments,
-                  businessLicense: 'verified'
-                };
-              }
-
-              // Update business information if provided
-              if (request.businessInfo) {
-                updates.businessName = request.businessInfo.businessName || account.businessName;
-                updates.businessDescription = request.businessInfo.businessDescription || account.businessDescription;
-                updates.businessType = request.businessInfo.businessType || account.businessType;
-                if (request.businessInfo.location) {
-                  updates.location = request.businessInfo.location;
-                }
-              }
-            }
-
-            return updates;
-          }
-        return account;
-      });
-      localStorage.setItem(storageKey, JSON.stringify(updatedUsers));
-      return updatedUsers;
-    };
-
-    // Update main users only (no demo accounts)
-      const mainUsers = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
-      const updatedMainUsers = updateUserVerification(mainUsers, 'agriconnect-myanmar-users');
-
-      // Also update the current user if they're logged in and this is their request
-      const currentUser = JSON.parse(localStorage.getItem('agriconnect-myanmar-current-user') || 'null');
-      if (currentUser && (currentUser.id === request.userId || currentUser.email === request.userEmail)) {
-        // Find updated user from main users
-        const updatedCurrentUser = updatedMainUsers.find((acc: any) => acc.id === request.userId || acc.email === request.userEmail);
-        if (updatedCurrentUser) {
-          localStorage.setItem('agriconnect-myanmar-current-user', JSON.stringify(updatedCurrentUser));
-        }
+      if (error) {
+        console.error('❌ Error updating user verification status:', error);
+        throw error;
       }
+
+      // Update local state
+      const updatedRequests = requests.map(r => 
+        r.id === request.id ? {
+          ...r,
+          verificationStatus: 'verified' as const,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: currentAdmin.email,
+          reviewNotes: reviewNotes || 'Request approved'
+        } : r
+      );
+      setRequests(updatedRequests);
 
       toast.success(`Verification request approved for ${request.userName}`);
       setSelectedRequest(null);
       setReviewNotes('');
     } catch (error) {
-      console.error('Failed to approve request:', error);
+      console.error('❌ Failed to approve request:', error);
       toast.error('Failed to approve verification request');
     } finally {
       setIsProcessing(false);
@@ -442,35 +501,33 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
 
     setIsProcessing(true);
     try {
-      // Update the request status
-      const updatedRequest = {
-        ...request,
-        status: 'rejected' as const,
-        reviewedAt: new Date().toISOString(),
-        reviewedBy: currentAdmin.email,
-        reviewNotes: reviewNotes,
-        documents: {
-          ...request.documents,
-          nationalId: request.documents.nationalId ? {
-            ...request.documents.nationalId,
-            status: 'rejected' as const
-          } : undefined,
-          businessLicense: request.documents.businessLicense ? {
-            ...request.documents.businessLicense,
-            status: 'rejected' as const
-          } : undefined,
-          farmCertification: request.documents.farmCertification ? {
-            ...request.documents.farmCertification,
-            status: 'rejected' as const
-          } : undefined,
-        }
-      };
+      console.log('❌ Rejecting verification request:', request.id);
+      
+      // Update user verification status in database
+      const { error } = await supabase
+        .from('users')
+        .update({
+          verification_status: 'rejected',
+          verified: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', request.userId);
 
-      // Update requests in localStorage
+      if (error) {
+        console.error('❌ Error updating user verification status:', error);
+        throw error;
+      }
+
+      // Update local state
       const updatedRequests = requests.map(r => 
-        r.id === request.id ? updatedRequest : r
+        r.id === request.id ? {
+          ...r,
+          verificationStatus: 'rejected' as const,
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: currentAdmin.email,
+          reviewNotes: reviewNotes
+        } : r
       );
-      localStorage.setItem('agriconnect-verification-requests', JSON.stringify(updatedRequests));
       setRequests(updatedRequests);
 
       // Update user verification status in main users
@@ -520,8 +577,13 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
     }
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
-  const processedRequests = requests.filter(r => r.status !== 'pending');
+  const pendingRequests = requests.filter(r => 
+    r.verificationStatus === 'pending' || r.verificationStatus === 'under_review'
+  );
+  const processedRequests = requests.filter(r => 
+    r.verificationStatus === 'verified' || 
+    r.verificationStatus === 'rejected'
+  );
 
   return (
     <div className="space-y-6">
@@ -557,7 +619,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <div>
-                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'approved').length}</p>
+                <p className="text-2xl font-bold">{requests.filter(r => r.verificationStatus === 'verified').length}</p>
                 <p className="text-sm text-muted-foreground">Approved</p>
               </div>
             </div>
@@ -569,7 +631,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
             <div className="flex items-center gap-2">
               <XCircle className="w-5 h-5 text-red-500" />
               <div>
-                <p className="text-2xl font-bold">{requests.filter(r => r.status === 'rejected').length}</p>
+                <p className="text-2xl font-bold">{requests.filter(r => r.verificationStatus === 'rejected').length}</p>
                 <p className="text-sm text-muted-foreground">Rejected</p>
               </div>
             </div>
@@ -629,10 +691,10 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
                           <span className="font-semibold">{request.userName}</span>
                         </div>
                         <Badge variant="secondary">
-                          {request.userType}
+                          {request.userType || 'Unknown'}
                         </Badge>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status}
+                        <Badge className={getStatusColor(request.status || 'pending')}>
+                          {request.status || 'pending'}
                         </Badge>
                       </div>
                       <Dialog>
@@ -737,47 +799,182 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
                                   Submitted Documents
                                 </h3>
                                 
-                                {selectedRequest.documents.nationalId && (
-                                  <div className="border rounded-lg p-4 space-y-2">
-                                    <Label>National ID</Label>
-                                    <div className="text-sm text-muted-foreground">
-                                      {selectedRequest.documents.nationalId.front && 
-                                        <div>✓ Front side uploaded</div>
-                                      }
-                                      {selectedRequest.documents.nationalId.back && 
-                                        <div>✓ Back side uploaded</div>
-                                      }
-                                      <Badge variant="outline" className="mt-2">
-                                        {selectedRequest.documents.nationalId.status}
+                                {/* Debug: Show verification documents structure */}
+                                {process.env.NODE_ENV === 'development' && (
+                                  <div className="bg-gray-100 p-2 rounded text-xs">
+                                    <strong>Debug - Verification Documents:</strong>
+                                    <pre>{JSON.stringify(selectedRequest.verificationDocuments, null, 2)}</pre>
+                                  </div>
+                                )}
+                                
+                                {selectedRequest.verificationDocuments?.idCard && (
+                                  <div className="border rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-base font-medium">National ID</Label>
+                                      <Badge variant="outline">
+                                        {selectedRequest.verificationDocuments?.idCard?.status || 'uploaded'}
                                       </Badge>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <div className="flex items-center space-x-2">
+                                          <FileText className="h-4 w-4 text-blue-600" />
+                                          <div>
+                                            <span className="text-sm font-medium">ID Document</span>
+                                            <div className="text-xs text-muted-foreground">
+                                              {selectedRequest.verificationDocuments?.idCard?.name}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              Uploaded: {selectedRequest.verificationDocuments?.idCard?.uploadedAt ? 
+                                                new Date(selectedRequest.verificationDocuments.idCard.uploadedAt).toLocaleString() : 
+                                                'Unknown'
+                                              }
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-1">
+                                          {selectedRequest.verificationDocuments?.idCard?.data && (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => {
+                                                const newWindow = window.open();
+                                                if (newWindow) {
+                                                  newWindow.document.write(`
+                                                    <html>
+                                                      <head><title>ID Document</title></head>
+                                                      <body style="margin:0; padding:20px; text-align:center;">
+                                                        <img src="${selectedRequest.verificationDocuments?.idCard?.data}" style="max-width:100%; height:auto;" />
+                                                      </body>
+                                                    </html>
+                                                  `);
+                                                }
+                                              }}
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          {selectedRequest.verificationDocuments?.idCard?.data && (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.href = selectedRequest.verificationDocuments?.idCard?.data || '';
+                                                link.download = selectedRequest.verificationDocuments?.idCard?.name || 'id-document';
+                                                link.click();
+                                              }}
+                                            >
+                                              <Download className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
 
-                                {selectedRequest.documents.businessLicense && (
-                                  <div className="border rounded-lg p-4 space-y-2">
-                                    <Label>Business License</Label>
-                                    <div className="text-sm text-muted-foreground">
-                                      {selectedRequest.documents.businessLicense.document && 
-                                        <div>✓ Business license uploaded</div>
-                                      }
-                                      <Badge variant="outline" className="mt-2">
-                                        {selectedRequest.documents.businessLicense.status}
+                                {selectedRequest.verificationDocuments?.businessLicense && (
+                                  <div className="border rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-base font-medium">Business License</Label>
+                                      <Badge variant="outline">
+                                        {selectedRequest.verificationDocuments?.businessLicense?.status || 'uploaded'}
                                       </Badge>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <div className="flex items-center space-x-2">
+                                          <FileText className="h-4 w-4 text-green-600" />
+                                          <div>
+                                            <span className="text-sm font-medium">Business License Document</span>
+                                            <div className="text-xs text-muted-foreground">
+                                              {selectedRequest.verificationDocuments?.businessLicense?.name}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              Uploaded: {selectedRequest.verificationDocuments?.businessLicense?.uploadedAt ? 
+                                                new Date(selectedRequest.verificationDocuments.businessLicense.uploadedAt).toLocaleString() : 
+                                                'Unknown'
+                                              }
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-1">
+                                          {selectedRequest.verificationDocuments?.businessLicense?.data && (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => {
+                                                const newWindow = window.open();
+                                                if (newWindow) {
+                                                  newWindow.document.write(`
+                                                    <html>
+                                                      <head><title>Business License</title></head>
+                                                      <body style="margin:0; padding:20px; text-align:center;">
+                                                        <img src="${selectedRequest.verificationDocuments?.businessLicense?.data}" style="max-width:100%; height:auto;" />
+                                                      </body>
+                                                    </html>
+                                                  `);
+                                                }
+                                              }}
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          {selectedRequest.verificationDocuments?.businessLicense?.data && (
+                                            <Button 
+                                              size="sm" 
+                                              variant="outline" 
+                                              className="h-8 w-8 p-0"
+                                              onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.href = selectedRequest.verificationDocuments?.businessLicense?.data || '';
+                                                link.download = selectedRequest.verificationDocuments?.businessLicense?.name || 'business-license';
+                                                link.click();
+                                              }}
+                                            >
+                                              <Download className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 )}
 
-                                {selectedRequest.documents.farmCertification && (
+                                {selectedRequest.verificationDocuments?.farmCertification && (
                                   <div className="border rounded-lg p-4 space-y-2">
                                     <Label>Farm Certification</Label>
                                     <div className="text-sm text-muted-foreground">
-                                      {selectedRequest.documents.farmCertification.document && 
+                                      {selectedRequest.verificationDocuments?.farmCertification?.document && 
                                         <div>✓ Farm certification uploaded</div>
                                       }
                                       <Badge variant="outline" className="mt-2">
-                                        {selectedRequest.documents.farmCertification.status}
+                                        {selectedRequest.verificationDocuments?.farmCertification?.status || 'pending'}
                                       </Badge>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Fallback when no documents are present */}
+                                {!selectedRequest.verificationDocuments?.idCard && 
+                                 !selectedRequest.verificationDocuments?.businessLicense && 
+                                 !selectedRequest.verificationDocuments?.farmCertification && (
+                                  <div className="border rounded-lg p-6 text-center text-muted-foreground">
+                                    <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                    <h3 className="font-semibold text-lg mb-2">No Documents Uploaded</h3>
+                                    <p className="text-sm mb-3">This user has requested verification but hasn't uploaded any documents yet.</p>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-left">
+                                      <p className="text-sm text-yellow-800">
+                                        <strong>Note:</strong> This appears to be a system issue. Users should not be able to request verification without uploading required documents.
+                                      </p>
+                                    </div>
+                                    <div className="mt-4 space-y-2 text-sm">
+                                      <p><strong>Required for Individual Accounts:</strong> National ID (front & back)</p>
+                                      <p><strong>Required for Business Accounts:</strong> National ID + Business License</p>
                                     </div>
                                   </div>
                                 )}
@@ -872,10 +1069,10 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
                           <span className="font-semibold">{request.userName}</span>
                         </div>
                         <Badge variant="secondary">
-                          {request.userType}
+                          {request.userType || 'Unknown'}
                         </Badge>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status}
+                        <Badge className={getStatusColor(request.status || 'pending')}>
+                          {request.status || 'pending'}
                         </Badge>
                       </div>
                     </div>

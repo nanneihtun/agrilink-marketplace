@@ -216,12 +216,32 @@ export const useAuth = () => {
     if (!user || !supabase) return;
 
     try {
+      // Convert camelCase field names to snake_case for database
+      const dbUpdates: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Map frontend field names to database field names
+      if (updates.accountType !== undefined) dbUpdates.account_type = updates.accountType;
+      if (updates.userType !== undefined) dbUpdates.user_type = updates.userType;
+      if (updates.phoneVerified !== undefined) dbUpdates.phone_verified = updates.phoneVerified;
+      if (updates.businessName !== undefined) dbUpdates.business_name = updates.businessName;
+      if (updates.businessDescription !== undefined) dbUpdates.business_description = updates.businessDescription;
+      if (updates.joinedDate !== undefined) dbUpdates.created_at = updates.joinedDate;
+      if (updates.totalReviews !== undefined) dbUpdates.total_reviews = updates.totalReviews;
+      
+      // Direct field mappings (no conversion needed)
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.email !== undefined) dbUpdates.email = updates.email;
+      if (updates.location !== undefined) dbUpdates.location = updates.location;
+      if (updates.region !== undefined) dbUpdates.region = updates.region;
+      if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+      if (updates.verified !== undefined) dbUpdates.verified = updates.verified;
+      if (updates.experience !== undefined) dbUpdates.experience = updates.experience;
+
       const { data, error } = await supabase
         .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(dbUpdates)
         .eq('id', user.id)
         .select()
         .single();

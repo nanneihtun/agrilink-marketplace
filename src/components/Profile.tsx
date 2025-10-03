@@ -28,10 +28,6 @@ import {
   Trash2,
   Database,
   Clock,
-  Facebook,
-  Instagram,
-  Globe,
-  MessageCircle
 } from "lucide-react";
 // No storage utility needed with Supabase
 // No StorageManager needed with Supabase
@@ -78,10 +74,6 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
         profileImage: '',
         region: '',
         businessName: '',
-        facebook: '',
-        instagram: '',
-        website: '',
-        telegram: ''
       };
     }
     
@@ -92,10 +84,6 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
       profileImage: user.profileImage || '',
       region: user.region || '',
       businessName: user.businessName || '',
-      facebook: user.facebook || '',
-      instagram: user.instagram || '',
-      website: user.website || '',
-      telegram: user.telegram || ''
     };
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -836,209 +824,6 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
             </CardContent>
           </Card>
 
-          {/* Social Media & Online Presence - Only for farmers and traders */}
-          {(user.userType === 'farmer' || user.userType === 'trader') && (
-            <Card className="border-primary/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5" />
-                  Social Media & Online Presence
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Add your social media profiles to build trust and connect with customers
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-8">
-                  {/* Facebook */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Facebook className="w-4 h-4" />
-                      Facebook Page/Profile
-                    </div>
-                    {editing?.field === 'facebook' ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          placeholder="https://facebook.com/yourpage or facebook.com/yourpage"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSave('facebook', editing.value);
-                            if (e.key === 'Escape') cancelEditing();
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleSave('facebook', editing.value)}>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEditing}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium flex-1">
-                          {formData.facebook || 'Add Facebook page/profile'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('facebook', formData.facebook || '')}
-                          className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Instagram */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Instagram className="w-4 h-4" />
-                      Instagram Profile
-                    </div>
-                    {editing?.field === 'instagram' ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          placeholder="https://instagram.com/yourprofile or instagram.com/yourprofile"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSave('instagram', editing.value);
-                            if (e.key === 'Escape') cancelEditing();
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleSave('instagram', editing.value)}>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEditing}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium flex-1">
-                          {formData.instagram || 'Add Instagram profile'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('instagram', formData.instagram || '')}
-                          className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Website */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Globe className="w-4 h-4" />
-                      Business Website
-                    </div>
-                    {editing?.field === 'website' ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          placeholder="https://yourwebsite.com"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSave('website', editing.value);
-                            if (e.key === 'Escape') cancelEditing();
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleSave('website', editing.value)}>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEditing}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium flex-1">
-                          {formData.website || 'Add business website'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('website', formData.website || '')}
-                          className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Telegram */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MessageCircle className="w-4 h-4" />
-                      Telegram
-                    </div>
-                    {editing?.field === 'telegram' ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editing.value}
-                          onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                          placeholder="@yourusername or t.me/yourusername"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSave('telegram', editing.value);
-                            if (e.key === 'Escape') cancelEditing();
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleSave('telegram', editing.value)}>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={cancelEditing}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium flex-1">
-                          {formData.telegram || 'Add Telegram username'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('telegram', formData.telegram || '')}
-                          className="h-8 w-8 p-0 opacity-60 hover:opacity-100"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Helper text */}
-                <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <strong>💡 Tip:</strong> Adding social media profiles helps customers verify your business 
-                  and increases trust. Your social links will be displayed on your storefront.
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Storefront Management */}
           {(user.userType === 'farmer' || user.userType === 'trader') && (

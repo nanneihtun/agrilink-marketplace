@@ -24,6 +24,7 @@ import { Profile } from "./components/Profile";
 import { Messages } from "./components/Messages";
 import { VerificationPrompt } from "./components/VerificationPrompt";
 import { AdminVerificationPanel } from "./components/AdminVerificationPanel";
+import { AdminDashboard } from "./components/AdminDashboard";
 // SimpleVerificationTester removed - debug component
 import { AboutUs } from "./components/AboutUs";
 import { ContactUsPage } from "./components/ContactUsPage";
@@ -782,6 +783,18 @@ export default function App() {
                   <AdminVerificationPanel
                     currentAdmin={currentUser}
                     onBack={navigation.handleBackToPrevious}
+                  />
+                </div>
+              )}
+
+            {currentView === "admin-dashboard" &&
+              currentUser &&
+              currentUser.userType === "admin" && (
+                <div className="max-w-7xl mx-auto">
+                  <AdminDashboard
+                    currentAdmin={currentUser}
+                    onBack={navigation.handleBackToPrevious}
+                    onNavigateToVerification={() => navigation.handleShowAdminVerification()}
                   />
                 </div>
               )}

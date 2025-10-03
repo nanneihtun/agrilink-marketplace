@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
-import { Phone, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Phone, CheckCircle, Clock, AlertCircle, Shield, Edit } from 'lucide-react';
+import { TwilioService } from '../services/twilio';
 import { toast } from 'sonner';
 
 interface PhoneVerificationProps {
@@ -17,11 +17,19 @@ interface PhoneVerificationProps {
 
 export function PhoneVerification({ currentUser, onVerificationComplete, onBack }: PhoneVerificationProps) {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(currentUser.phone || '');
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [isTwilioConfigured, setIsTwilioConfigured] = useState(false);
+  const [verificationSid, setVerificationSid] = useState<string | null>(null);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+
+  // Check Twilio configuration on component mount
+  useEffect(() => {
+    setIsTwilioConfigured(TwilioService.isConfigured());
+  }, []);
 
   // Start countdown timer
   const startCountdown = () => {
@@ -54,24 +62,23 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
     setError('');
 
     try {
-      if (!supabase) {
-        throw new Error('Supabase not available');
+      console.log('📱 Sending verification SMS via Twilio...');
+      
+      // Send OTP via Twilio
+      const result = await TwilioService.sendVerificationSMS(phoneNumber);
+
+      if (!result.success) {
+        throw new Error(result.message);
       }
 
-      // Send OTP via Supabase
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        phone: phoneNumber,
-      });
-
-      if (otpError) {
-        throw otpError;
-      }
-
-      toast.success('Verification code sent to your phone!');
+      setVerificationSid(result.verificationSid || null);
+      toast.success(result.message);
       setStep('otp');
       startCountdown();
+      
+      console.log('✅ Verification SMS sent successfully');
     } catch (err: any) {
-      console.error('Send OTP error:', err);
+      console.error('❌ Send OTP error:', err);
       setError(err.message || 'Failed to send verification code. Please try again.');
     } finally {
       setIsLoading(false);
@@ -93,19 +100,13 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
     setError('');
 
     try {
-      if (!supabase) {
-        throw new Error('Supabase not available');
-      }
+      console.log('📱 Verifying SMS code via Twilio...');
+      
+      // Verify OTP with Twilio
+      const result = await TwilioService.verifySMSCode(phoneNumber, otpCode);
 
-      // Verify OTP with Supabase
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        phone: phoneNumber,
-        token: otpCode,
-        type: 'sms'
-      });
-
-      if (verifyError) {
-        throw verifyError;
+      if (!result.success) {
+        throw new Error(result.message);
       }
 
       // Update user profile with phone verification
@@ -114,27 +115,22 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
         phoneNumber: phoneNumber
       });
 
-      const { data: updateData, error: updateError } = await supabase
-        .from('users')
-        .update({
-          phone: phoneNumber,
-          phone_verified: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentUser.id)
-        .select();
+      const updateResult = await TwilioService.updateUserPhoneVerification(
+        currentUser.id,
+        phoneNumber,
+        true
+      );
 
-      if (updateError) {
-        console.error('❌ Database update error:', updateError);
-        throw new Error(`Database update failed: ${updateError.message}`);
+      if (!updateResult.success) {
+        throw new Error(updateResult.error || 'Failed to update user profile');
       }
 
-      console.log('✅ User profile updated successfully:', updateData);
+      console.log('✅ Phone verification completed successfully');
 
       toast.success('Phone number verified successfully!');
       onVerificationComplete(phoneNumber);
     } catch (err: any) {
-      console.error('Verify OTP error:', err);
+      console.error('❌ Verify OTP error:', err);
       setError(err.message || 'Invalid verification code. Please try again.');
     } finally {
       setIsLoading(false);
@@ -162,26 +158,45 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
           <>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+959123456789"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+959123456789"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={isLoading || !isEditingPhone}
+                  className={`pr-10 ${!isEditingPhone ? 'bg-muted text-muted-foreground cursor-not-allowed' : ''}`}
+                />
+                {!isEditingPhone && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingPhone(true)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Enter your phone number with country code (e.g., +959 for Myanmar)
+                {isEditingPhone 
+                  ? 'Enter your phone number with country code (e.g., +959 for Myanmar)'
+                  : 'Click the edit button to modify your phone number'
+                }
               </p>
             </div>
 
-            {/* Test Numbers Info */}
-            <Alert>
-              <AlertCircle className="w-4 h-4" />
-              <AlertDescription>
-                <strong>For testing:</strong> Use +15005550001 (OTP: 123456) or +15005550002 (OTP: 789012)
-              </AlertDescription>
-            </Alert>
+            {/* Twilio Status */}
+      <Alert className="border-green-200 bg-green-50">
+        <Shield className="w-4 h-4 text-green-600" />
+        <AlertDescription>
+          <span className="text-green-800">
+            <strong>Twilio Connected:</strong> Real SMS verification enabled
+          </span>
+        </AlertDescription>
+      </Alert>
 
             {error && (
               <Alert variant="destructive">
@@ -197,11 +212,24 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
               )}
               <Button 
                 onClick={handleSendOTP} 
-                disabled={isLoading}
+                disabled={isLoading || !phoneNumber.trim()}
                 className="flex-1"
               >
                 {isLoading ? 'Sending...' : 'Send Verification Code'}
               </Button>
+              
+              {isEditingPhone && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditingPhone(false);
+                    setPhoneNumber(currentUser.phone || '');
+                  }}
+                  className="px-4"
+                >
+                  Cancel
+                </Button>
+              )}
             </div>
           </>
         ) : (
@@ -214,6 +242,11 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
               <p className="text-sm text-muted-foreground">
                 We sent a 6-digit code to <strong>{phoneNumber}</strong>
               </p>
+              {!isTwilioConfigured && (
+                <p className="text-xs text-yellow-600 font-medium">
+                  Demo Mode: Use 123456 or any code ending in 00
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

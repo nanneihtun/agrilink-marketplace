@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { OTPVerification } from "./OTPVerification";
 import { PhoneVerification } from "./PhoneVerification";
 import { 
   ArrowLeft, 
@@ -129,13 +128,12 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     }
   }, [currentUser.verificationDocuments]);
   
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
   
   // Business form state
   const [businessForm, setBusinessForm] = useState({
     businessName: currentUser.businessName || '',
     businessDescription: currentUser.businessDescription || '',
-    businessType: (currentUser as any).businessType || '',
+    // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
     businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
   });
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
@@ -145,10 +143,10 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     setBusinessForm({
       businessName: currentUser.businessName || '',
       businessDescription: currentUser.businessDescription || '',
-      businessType: (currentUser as any).businessType || '',
+      // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
       businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
     });
-  }, [currentUser.businessName, currentUser.businessDescription, (currentUser as any).businessType, (currentUser as any).businessLicenseNumber]);
+  }, [currentUser.businessName, currentUser.businessDescription]);
   
   // Initialize AgriLink verification state from user data
   const [agriLinkVerificationRequested, setAgriLinkVerificationRequested] = useState(() => {
@@ -183,28 +181,16 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   
   // Monitor verification status changes to hide success message when status changes
   useEffect(() => {
-    console.log('🔍 Monitoring verification status changes:', {
-      verified: currentUser.verified,
-      verificationStatus: currentUser.verificationStatus,
-      showSuccessMessage,
-      agriLinkVerificationRequested: (currentUser as any).agriLinkVerificationRequested
-    });
-    
     // Hide success message if verification is completed (verified) or explicitly rejected
     if (showSuccessMessage) {
       if (currentUser.verified || currentUser.verificationStatus === 'rejected') {
-        console.log('✅ Verification status changed - hiding success message');
         setShowSuccessMessage(false);
       }
     }
   }, [currentUser.verified, currentUser.verificationStatus, showSuccessMessage]);
   
-  // All phone verification state
-  const [showPhoneDetail, setShowPhoneDetail] = useState(false);
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  // Phone verification state
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState(currentUser.phone || '');
-  const [originalPhoneNumber] = useState(currentUser.phone || '');
   
   // All documents state
   const [showDocumentsDetail, setShowDocumentsDetail] = useState(false);
@@ -215,19 +201,9 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   // Determine account type
   const isBusinessAccount = currentUser.accountType === 'business';
   
-  // Helper function to check document completion status with debugging
-  const getDocumentCompletionStatus = () => {
+  // Helper function to check document completion status
+  const getDocumentCompletionStatus = useMemo(() => {
     const userDocs = (currentUser as any).verificationDocuments;
-    
-    console.log('🔍 Checking document completion status:', {
-      isBusinessAccount,
-      uploadedDocuments: Object.keys(uploadedDocuments),
-      userVerificationDocuments: userDocs,
-      hasLocalIdCard: !!uploadedDocuments.idCard,
-      hasUserIdCard: !!(userDocs?.idCard && userDocs.idCard !== 'pending'),
-      hasLocalBusinessLicense: !!uploadedDocuments.businessLicense,
-      hasUserBusinessLicense: !!(userDocs?.businessLicense && userDocs.businessLicense !== 'pending')
-    });
     
     const hasIdCard = uploadedDocuments.idCard || 
                      (userDocs?.idCard && userDocs.idCard !== 'pending');
@@ -236,15 +212,8 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     // Business license is handled in separate Business Details step for business accounts
     const isComplete = hasIdCard;
     
-    console.log('📊 Document status calculation:', {
-      hasIdCard,
-      isComplete,
-      accountType: isBusinessAccount ? 'business' : 'individual',
-      note: 'Identity Documents step only requires ID card for both account types'
-    });
-    
     return { hasIdCard, hasBusinessLicense: false, isComplete };
-  };
+  }, [uploadedDocuments.idCard, currentUser.verificationDocuments, isBusinessAccount]);
   
   // Calculate progress more comprehensively
   const getProgress = () => {
@@ -266,7 +235,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     
     // 3. Business details (only for business accounts)
     if (isBusinessAccount) {
-      const hasBusinessInfo = currentUser.businessName && (currentUser as any).businessLicenseNumber;
+      const hasBusinessInfo = currentUser.businessName && currentUser.businessDescription;
       const hasBusinessLicense = (currentUser as any).verificationDocuments?.businessLicense && 
                                 (currentUser as any).verificationDocuments.businessLicense !== 'pending';
       if (hasBusinessInfo && hasBusinessLicense) completed++;
@@ -279,50 +248,6 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   };
 
   // Handler functions
-  const handleSendOTP = async () => {
-    if (!phoneNumber.trim()) {
-      alert('Please enter a valid phone number');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      // Simulate sending OTP
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Update user with phone number (not verified yet)
-      await onUpdate({
-        ...currentUser,
-        phone: phoneNumber
-      });
-      
-      // Show OTP verification screen
-      setShowOTPVerification(true);
-    } catch (error) {
-      alert('Failed to send verification code. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOTPVerificationComplete = async () => {
-    try {
-      // Update user with verified phone
-      await onUpdate({
-        ...currentUser,
-        phone: phoneNumber,
-        phoneVerified: true,
-        phoneVerificationDate: new Date().toISOString()
-      });
-      
-      // Go back to phone details view and exit edit mode
-      setShowOTPVerification(false);
-      setShowPhoneDetail(true);
-      setIsEditingPhone(false);
-    } catch (error) {
-      alert('Failed to update verification status. Please try again.');
-    }
-  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, documentType: string) => {
     const file = event.target.files?.[0];
@@ -364,7 +289,19 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       // This ensures the status is reflected in the overview right away
       const updatedDocuments = {
         ...(currentUser.verificationDocuments || {}),
-        [documentType]: 'uploaded'
+        [documentType]: {
+          status: 'uploaded',
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date().toISOString(),
+          // Store the file as base64 for now (in production, you'd upload to a file storage service)
+          data: await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          })
+        }
       };
       
       console.log(`📝 Updating user profile with new verification documents:`, updatedDocuments);
@@ -401,8 +338,11 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     try {
       console.log('🛡️ Requesting AgriLink verification for user:', currentUser.email);
       
-      // Check if documents are uploaded 
-      const hasUploadedDocs = uploadedDocuments.idCard && (!isBusinessAccount || uploadedDocuments.businessLicense);
+      // Check if documents are uploaded in the database
+      const userDocs = currentUser.verificationDocuments || {};
+      const hasIdCard = userDocs.idCard && userDocs.idCard.status === 'uploaded';
+      const hasBusinessLicense = !isBusinessAccount || (userDocs.businessLicense && userDocs.businessLicense.status === 'uploaded');
+      const hasUploadedDocs = hasIdCard && hasBusinessLicense;
       
       if (hasUploadedDocs) {
         // Create verification request for admin review
@@ -417,19 +357,21 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
           status: 'pending',
           submittedAt: new Date().toISOString(),
           documents: {
-            nationalId: uploadedDocuments.idCard ? {
-              status: 'uploaded',
-              name: uploadedDocuments.idCard.name
+            nationalId: userDocs.idCard ? {
+              status: userDocs.idCard.status,
+              name: userDocs.idCard.name,
+              uploadedAt: userDocs.idCard.uploadedAt
             } : undefined,
-            businessLicense: uploadedDocuments.businessLicense ? {
-              status: 'uploaded', 
-              name: uploadedDocuments.businessLicense.name
+            businessLicense: userDocs.businessLicense ? {
+              status: userDocs.businessLicense.status,
+              name: userDocs.businessLicense.name,
+              uploadedAt: userDocs.businessLicense.uploadedAt
             } : undefined,
           },
           businessInfo: isBusinessAccount ? {
             businessName: currentUser.businessName,
             businessDescription: currentUser.businessDescription,
-            businessType: (currentUser as any).businessType,
+            // businessType: (currentUser as any).businessType, // Removed as it's not in User interface
             businessLicenseNumber: (currentUser as any).businessLicenseNumber,
             location: currentUser.location
           } : undefined,
@@ -455,11 +397,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
           agriLinkVerificationRequestedAt: new Date().toISOString(),
           verificationStatus: 'under_review',
           verificationSubmittedAt: new Date().toISOString(),
-          verificationDocuments: {
-            ...(currentUser as any).verificationDocuments,
-            idCard: 'uploaded',
-            ...(isBusinessAccount && { businessLicense: 'uploaded' })
-          }
+          verificationDocuments: userDocs
         });
 
         console.log('✅ AgriLink verification request submitted successfully:', verificationRequest);
@@ -493,7 +431,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       console.log('💼 Saving business information:', {
         businessName: businessForm.businessName,
         businessDescription: businessForm.businessDescription,
-        businessType: businessForm.businessType,
+        // businessType: businessForm.businessType, // Removed as it's not in User interface
         businessLicenseNumber: businessForm.businessLicenseNumber
       });
       
@@ -501,7 +439,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         ...currentUser,
         businessName: businessForm.businessName,
         businessDescription: businessForm.businessDescription,
-        businessType: businessForm.businessType,
+        // businessType: businessForm.businessType, // Removed as it's not in User interface
         businessLicenseNumber: businessForm.businessLicenseNumber
       });
       
@@ -514,17 +452,6 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     }
   };
 
-  // If showing OTP verification, render that instead
-  if (showOTPVerification) {
-    return (
-      <OTPVerification
-        phoneNumber={phoneNumber}
-        onVerificationComplete={handleOTPVerificationComplete}
-        onBack={() => setShowOTPVerification(false)}
-        isDemo={true}
-      />
-    );
-  }
 
   // If showing new phone verification, render that instead
   if (showPhoneVerification) {
@@ -565,106 +492,6 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     );
   }
 
-  // If showing phone detail, render that instead
-  if (showPhoneDetail) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold">Phone Verification</h1>
-            <p className="text-sm text-muted-foreground">
-              {currentUser.phoneVerified ? 'Your verified phone number details' : 'Verify your phone number for account security'}
-            </p>
-          </div>
-        </div>
-
-        <Card className={currentUser.phoneVerified ? "bg-primary/5 border-primary/20" : ""}>
-          <CardContent className="p-6">
-            <h3 className={`font-semibold mb-4 ${currentUser.phoneVerified ? 'text-primary' : ''}`}>
-              {currentUser.phoneVerified && !isEditingPhone ? 'Verified Phone Number' : 
-               isEditingPhone ? 'Update Your Phone Number' : 'Verify Your Phone Number'}
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <div className="relative">
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+95 9 XXX XXX XXX"
-                    className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                      (phoneNumber && !isEditingPhone) 
-                        ? 'bg-muted border-muted cursor-not-allowed' 
-                        : 'border-muted bg-background text-foreground'
-                    }`}
-                    disabled={phoneNumber && !isEditingPhone}
-                  />
-                  {phoneNumber && !isEditingPhone && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsEditingPhone(true)}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                
-                {currentUser.phoneVerified && !isEditingPhone && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      Verified
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      on {new Date(currentUser.phoneVerificationDate || Date.now()).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Only show Send Verification Code button for first-time verification OR when editing verified phone */}
-              {(!currentUser.phoneVerified || isEditingPhone) && (
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSendOTP}
-                    disabled={isSubmitting || !phoneNumber.trim() || (isEditingPhone && phoneNumber === originalPhoneNumber)}
-                    className="flex-1"
-                  >
-                    {isSubmitting ? 'Sending Code...' : 'Send Verification Code'}
-                  </Button>
-                  
-                  {isEditingPhone && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setIsEditingPhone(false);
-                        setPhoneNumber(currentUser.phone || '');
-                      }}
-                      className="px-4"
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Back Button - Bottom Left */}
-        <div className="flex justify-start">
-          <Button variant="ghost" size="sm" onClick={() => setShowPhoneDetail(false)} className="px-3 py-2">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Back to Overview
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // If showing documents detail, render that instead
   if (showDocumentsDetail) {
@@ -1046,7 +873,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                             setBusinessForm({
                               businessName: currentUser.businessName || '',
                               businessDescription: currentUser.businessDescription || '',
-                              businessType: (currentUser as any).businessType || '',
+                              // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
                               businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
                             });
                           }}
@@ -1214,25 +1041,14 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   {currentUser.phoneVerified ? 'Complete' : 'Required'}
                 </Badge>
                 
-                {/* New Supabase Phone Verification Button */}
-                {!currentUser.phoneVerified && (
-                  <Button 
-                    size="sm"
-                    onClick={() => setShowPhoneVerification(true)}
-                    className="text-xs px-3 py-2 bg-primary text-white hover:bg-primary/90"
-                  >
-                    Verify with Supabase
-                  </Button>
-                )}
-                
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => setShowPhoneDetail(true)}
+                  onClick={() => setShowPhoneVerification(true)}
                   className={`p-1 h-8 w-8 ${
                     currentUser.phoneVerified 
                       ? 'text-primary hover:bg-primary/10' 
-                      : 'text-primary hover:bg-primary/10'
+                      : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -1246,7 +1062,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         <Card className={
           currentUser.verified 
             ? "bg-primary/5 border-primary/20" 
-            : getDocumentCompletionStatus().isComplete 
+            : getDocumentCompletionStatus.isComplete 
             ? "bg-primary/5 border-primary/20" 
             : "bg-primary/5 border-primary/20"
         }>
@@ -1256,13 +1072,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                   currentUser.verified 
                     ? 'bg-primary' 
-                    : getDocumentCompletionStatus().isComplete 
+                    : getDocumentCompletionStatus.isComplete 
                     ? 'bg-primary' 
                     : 'bg-primary/10 border-2 border-primary/40'
                 }`}>
                   {currentUser.verified ? (
                     <CheckCircle className="w-5 h-5 text-white" />
-                  ) : getDocumentCompletionStatus().isComplete ? (
+                  ) : getDocumentCompletionStatus.isComplete ? (
                     <CheckCircle className="w-5 h-5 text-white" />
                   ) : (
                     <FileText className="w-5 h-5 text-primary" />
@@ -1272,7 +1088,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   <p className={`font-medium truncate ${
                     currentUser.verified 
                       ? 'text-primary' 
-                      : getDocumentCompletionStatus().isComplete 
+                      : getDocumentCompletionStatus.isComplete 
                       ? 'text-primary' 
                       : 'text-primary/90'
                   }`}>
@@ -1281,13 +1097,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   <p className={`text-sm truncate ${
                     currentUser.verified 
                       ? 'text-primary/80' 
-                      : getDocumentCompletionStatus().isComplete 
+                      : getDocumentCompletionStatus.isComplete 
                       ? 'text-primary/80' 
                       : 'text-primary'
                   }`}>
                     {currentUser.verified 
                       ? 'Documents verified' 
-                      : getDocumentCompletionStatus().isComplete 
+                      : getDocumentCompletionStatus.isComplete 
                       ? 'Documents uploaded' 
                       : 'Upload identity documents'
                     }
@@ -1300,14 +1116,14 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   className={
                     currentUser.verified 
                       ? 'bg-green-100 text-green-700 border-green-200' 
-                      : getDocumentCompletionStatus().isComplete 
+                      : getDocumentCompletionStatus.isComplete 
                       ? 'bg-green-100 text-green-700 border-green-200' 
                       : 'bg-red-100 text-red-700 border-red-200'
                   }
                 >
                   {currentUser.verified 
                     ? 'Complete' 
-                    : getDocumentCompletionStatus().isComplete 
+                    : getDocumentCompletionStatus.isComplete 
                     ? 'Complete' 
                     : 'Required'
                   }
@@ -1319,7 +1135,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   className={`p-1 h-8 w-8 ${
                     currentUser.verified 
                       ? 'text-primary hover:bg-primary/10' 
-                      : getDocumentCompletionStatus().isComplete 
+                      : getDocumentCompletionStatus.isComplete 
                       ? 'text-primary hover:bg-primary/10' 
                       : 'text-primary hover:bg-primary/10'
                   }`}
@@ -1334,7 +1150,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         {/* Business Details - Only show for business accounts */}
         {isBusinessAccount && (() => {
           // Check business completion status more comprehensively
-          const hasBusinessInfo = currentUser.businessName && (currentUser as any).businessLicenseNumber;
+          const hasBusinessInfo = currentUser.businessName && currentUser.businessDescription;
           const hasBusinessLicense = uploadedDocuments.businessLicense || 
                                    (currentUser.verificationDocuments?.businessLicense && 
                                     currentUser.verificationDocuments.businessLicense !== 'pending');
@@ -1464,7 +1280,17 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {/* Always show the Request Verification button for better UX visibility */}
                   {(() => {
-                    const canRequest = currentUser.phoneVerified && uploadedDocuments.idCard && (!isBusinessAccount || uploadedDocuments.businessLicense) && !agriLinkVerificationRequested;
+                    // Check business completion properly
+                    const hasBusinessInfo = !isBusinessAccount || (currentUser.businessName && currentUser.businessDescription);
+                    const hasBusinessLicense = !isBusinessAccount || uploadedDocuments.businessLicense || 
+                                             (currentUser.verificationDocuments?.businessLicense && 
+                                              currentUser.verificationDocuments.businessLicense !== 'pending');
+                    
+                    const canRequest = currentUser.phoneVerified && 
+                                      uploadedDocuments.idCard && 
+                                      hasBusinessInfo && 
+                                      hasBusinessLicense && 
+                                      !agriLinkVerificationRequested;
                     
                     if (canRequest) {
                       return (
@@ -1479,10 +1305,11 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                       );
                     } else {
                       // Show disabled button with helpful tooltip
-                      const missingSteps = [];
+                      const missingSteps: string[] = [];
                       if (!currentUser.phoneVerified) missingSteps.push('phone verification');
                       if (!uploadedDocuments.idCard) missingSteps.push('ID documents');
-                      if (isBusinessAccount && !uploadedDocuments.businessLicense) missingSteps.push('business license');
+                      if (isBusinessAccount && !hasBusinessInfo) missingSteps.push('business information');
+                      if (isBusinessAccount && !hasBusinessLicense) missingSteps.push('business license');
                       
                       const tooltipText = missingSteps.length > 0 
                         ? `Complete ${missingSteps.join(', ')} first`
