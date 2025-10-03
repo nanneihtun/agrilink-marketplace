@@ -13,7 +13,7 @@ export function AppFooter({
 }: AppFooterProps) {
   return (
     <footer className="border-t bg-card mt-8">
-      <div className="w-full max-w-7xl mx-auto px-4 py-6">
+      <div className="w-full max-w-5xl mx-auto px-4 py-6">
         {/* Core Mission Statement */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">

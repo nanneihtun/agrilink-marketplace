@@ -27,6 +27,7 @@ import {
   Edit,
   FileText
 } from "lucide-react";
+import { getRelativeTime } from "../utils/dates";
 
 // Helper function to extract the main unit from variation name
 function extractMainUnit(variationName: string): string {
@@ -459,7 +460,7 @@ export function ProductDetails({
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm">Updated {product.lastUpdated}</span>
+                      <span className="text-sm">Updated {getRelativeTime(product.lastUpdated)}</span>
                     </div>
                   </div>
 

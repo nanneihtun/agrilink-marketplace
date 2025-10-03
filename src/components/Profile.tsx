@@ -55,7 +55,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
   // Early return if user is null/undefined to prevent render errors
   if (!user) {
     return (
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-4">
         <div className="text-center py-8">
           <p className="text-muted-foreground">User data not available</p>
           <Button onClick={onBack} className="mt-4">Go Back</Button>

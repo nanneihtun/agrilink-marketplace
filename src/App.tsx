@@ -636,7 +636,7 @@ export default function App() {
 
         {/* Main Content - Conditional flex-grow based on content type */}
         <main
-          className={`w-full max-w-7xl mx-auto px-4 ${
+          className={`w-full max-w-5xl mx-auto px-4 ${
             currentView === "marketplace" ||
             currentView === "dashboard" ||
             currentView === "add-listing" ||
@@ -685,7 +685,7 @@ export default function App() {
             )}
 
             {currentView === "profile" && currentUser && (
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-4xl mx-auto">
                 <Profile
                   user={currentUser}
                   onBack={navigation.handleBackToPrevious}
@@ -745,7 +745,7 @@ export default function App() {
               )}
 
             {currentView === "messages" && currentUser && (
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-5xl mx-auto">
                 <Messages
                   currentUser={currentUser}
                   onBack={navigation.handleBackToPrevious}
@@ -755,7 +755,7 @@ export default function App() {
             )}
 
             {currentView === "deals" && currentUser && (
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-5xl mx-auto">
                 <DealsManagement
                   currentUserId={currentUser.id}
                   currentUserName={currentUser.name}
@@ -778,7 +778,7 @@ export default function App() {
             {currentView === "admin-verification" &&
               currentUser &&
               currentUser.userType === "admin" && (
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-6xl mx-auto">
                   <AdminVerificationPanel
                     currentAdmin={currentUser}
                     onBack={navigation.handleBackToPrevious}
@@ -871,7 +871,6 @@ export default function App() {
                         <ProductCard
                           key={product.id}
                           product={product}
-                          currentUser={currentUser}
                           onChat={chatManagement.handleChat}
                           onViewDetails={navigation.handleViewDetails}
                           onViewStorefront={navigation.handleViewStorefront}
@@ -885,7 +884,6 @@ export default function App() {
                               ? handleSaveProduct
                               : undefined
                           }
-                          onMakeOffer={handleMakeOffer}
                           currentUserId={currentUser?.id}
                           currentUserType={currentUser?.userType}
                           sellerVerified={

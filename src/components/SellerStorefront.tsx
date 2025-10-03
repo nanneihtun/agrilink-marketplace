@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { UserBadge, PublicVerificationStatus, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Separator } from "./ui/separator";
+import { ReviewsService, type SellerStats } from "../services/reviews";
 import { 
   ChevronLeft, 
   MapPin, 
@@ -102,6 +103,10 @@ export function SellerStorefront({
     value: string;
   } | null>(null);
   
+  // State for seller statistics
+  const [sellerStats, setSellerStats] = useState<SellerStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  
   // Storefront data state - directly use seller prop data
   const [storefrontData, setStorefrontData] = useState(() => ({
     description: seller.description || '',
@@ -120,9 +125,30 @@ export function SellerStorefront({
     }
   }));
 
+  // Fetch seller statistics
+  useEffect(() => {
+    const fetchSellerStats = async () => {
+      if (!seller.id) return;
+      
+      setLoadingStats(true);
+      try {
+        console.log('🔍 SellerStorefront: Fetching stats for sellerId:', seller.id);
+        const stats = await ReviewsService.getSellerStats(seller.id);
+        console.log('📊 SellerStorefront: Seller stats received:', stats);
+        setSellerStats(stats);
+      } catch (error) {
+        console.error('❌ SellerStorefront: Error fetching seller stats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchSellerStats();
+  }, [seller.id]);
+
   // Update storefront data when seller prop changes (for real-time profile updates)
   useEffect(() => {
-    setStorefrontData({
+    const newStorefrontData = {
       description: seller.description || '',
       businessHours: (seller as any).businessHours || '9 AM - 6 PM, Mon-Sat',
       phone: (seller as any).phone || '',
@@ -137,7 +163,9 @@ export function SellerStorefront({
         delivery: '',
         payment: ''
       }
-    });
+    };
+    
+    setStorefrontData(newStorefrontData);
   }, [seller]);
 
   const startEditing = (field: string, value: string) => {
@@ -320,29 +348,33 @@ export function SellerStorefront({
                   </div>
                 </div>
 
-                {/* Rating - Only show if seller has rating data */}
-                {seller.rating > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(seller.rating)
-                              ? 'text-yellow-400 fill-current'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm font-medium">
-                      {typeof seller.rating === 'number' ? seller.rating.toFixed(1) : seller.rating}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      ({seller.totalReviews} reviews)
-                    </span>
+                {/* Rating - Show dynamic data or loading state */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center">
+                    {loadingStats ? (
+                      <span className="text-sm text-muted-foreground">Loading...</span>
+                    ) : (
+                      <>
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.floor(sellerStats?.rating || 0)
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                        <span className="text-sm font-medium ml-2">
+                          {sellerStats?.rating ? sellerStats.rating.toFixed(1) : '0.0'}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          ({sellerStats?.totalReviews || 0} {sellerStats?.totalReviews === 1 ? 'review' : 'reviews'})
+                        </span>
+                      </>
+                    )}
                   </div>
-                )}
+                </div>
 
                 <Separator />
 
@@ -395,7 +427,9 @@ export function SellerStorefront({
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Response time: {seller.responseTime}</span>
+                    <span className="text-sm">
+                      Response time: {loadingStats ? 'Loading...' : (sellerStats?.responseTime || 'Within 24 hours')}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -557,8 +591,8 @@ export function SellerStorefront({
                   </div>
                 )}
 
-                {/* Social Media Links */}
-                {(storefrontData.facebook || storefrontData.instagram || storefrontData.telegram || (isOwnStorefront && !previewMode)) && (
+                {/* Social Media Links - Always show for own storefront, or if there are existing links */}
+                {((storefrontData.facebook || storefrontData.instagram || storefrontData.telegram) || (isOwnStorefront && !previewMode)) && (
                   <>
                     <Separator className="my-4" />
                     <div className="space-y-3">
@@ -569,7 +603,7 @@ export function SellerStorefront({
                       
                       <div className="flex items-center gap-3">
                         {/* Facebook */}
-                        {storefrontData.facebook && (
+                        {(storefrontData.facebook || (isOwnStorefront && !previewMode)) && (
                           <>
                             {editing?.field === 'facebook' ? (
                               <div className="flex-1 space-y-2">
@@ -589,7 +623,7 @@ export function SellerStorefront({
                                   </Button>
                                 </div>
                               </div>
-                            ) : (
+                            ) : storefrontData.facebook ? (
                               <div className="flex items-center gap-1">
                                 <a 
                                   href={storefrontData.facebook.startsWith('http') ? storefrontData.facebook : `https://facebook.com/${storefrontData.facebook.replace('facebook.com/', '').replace('@', '')}`}
@@ -610,12 +644,25 @@ export function SellerStorefront({
                                   </Button>
                                 )}
                               </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => startEditing('facebook', '')}
+                                  className="flex items-center gap-2 h-10 px-3"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <Facebook className="w-4 h-4" />
+                                  Add Facebook
+                                </Button>
+                              </div>
                             )}
                           </>
                         )}
 
                         {/* Instagram */}
-                        {storefrontData.instagram && (
+                        {(storefrontData.instagram || (isOwnStorefront && !previewMode)) && (
                           <>
                             {editing?.field === 'instagram' ? (
                               <div className="flex-1 space-y-2">
@@ -635,7 +682,7 @@ export function SellerStorefront({
                                   </Button>
                                 </div>
                               </div>
-                            ) : (
+                            ) : storefrontData.instagram ? (
                               <div className="flex items-center gap-1">
                                 <a 
                                   href={storefrontData.instagram.startsWith('http') ? storefrontData.instagram : `https://instagram.com/${storefrontData.instagram.replace('instagram.com/', '').replace('@', '')}`}
@@ -656,12 +703,25 @@ export function SellerStorefront({
                                   </Button>
                                 )}
                               </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => startEditing('instagram', '')}
+                                  className="flex items-center gap-2 h-10 px-3"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <Instagram className="w-4 h-4" />
+                                  Add Instagram
+                                </Button>
+                              </div>
                             )}
                           </>
                         )}
 
                         {/* Telegram */}
-                        {storefrontData.telegram && (
+                        {(storefrontData.telegram || (isOwnStorefront && !previewMode)) && (
                           <>
                             {editing?.field === 'telegram' ? (
                               <div className="flex-1 space-y-2">
@@ -681,7 +741,7 @@ export function SellerStorefront({
                                   </Button>
                                 </div>
                               </div>
-                            ) : (
+                            ) : storefrontData.telegram ? (
                               <div className="flex items-center gap-1">
                                 <a 
                                   href={storefrontData.telegram.startsWith('http') ? storefrontData.telegram : `https://t.me/${storefrontData.telegram.replace('@', '').replace('t.me/', '')}`}
@@ -702,45 +762,19 @@ export function SellerStorefront({
                                   </Button>
                                 )}
                               </div>
-                            )}
-                          </>
-                        )}
-                        
-                        {/* Add social media buttons for edit mode */}
-                        {isOwnStorefront && !previewMode && (
-                          <>
-                            {!storefrontData.facebook && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => startEditing('facebook', '')}
-                                className="flex items-center gap-2 text-xs"
-                              >
-                                <Facebook className="w-4 h-4 text-blue-600" />
-                                Add
-                              </Button>
-                            )}
-                            {!storefrontData.instagram && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => startEditing('instagram', '')}
-                                className="flex items-center gap-2 text-xs"
-                              >
-                                <Instagram className="w-4 h-4 text-pink-600" />
-                                Add
-                              </Button>
-                            )}
-                            {!storefrontData.telegram && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => startEditing('telegram', '')}
-                                className="flex items-center gap-2 text-xs"
-                              >
-                                <MessageCircle className="w-4 h-4 text-blue-500" />
-                                Add
-                              </Button>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => startEditing('telegram', '')}
+                                  className="flex items-center gap-2 h-10 px-3"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                  <MessageCircle className="w-4 h-4" />
+                                  Add Telegram
+                                </Button>
+                              </div>
                             )}
                           </>
                         )}

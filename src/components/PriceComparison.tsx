@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ChevronLeft, Filter, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
+import { getRelativeTime } from "../utils/dates";
 
 interface PriceData {
   id: string;
@@ -177,7 +178,7 @@ export function PriceComparison({ productName, priceData, unit, onBack, isOwnPro
                     
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="w-4 h-4" />
-                      <span>Updated {seller.lastUpdated}</span>
+                      <span>Updated {getRelativeTime(seller.lastUpdated)}</span>
                     </div>
                   </div>
                 </div>

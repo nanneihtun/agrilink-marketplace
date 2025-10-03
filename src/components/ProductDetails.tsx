@@ -30,6 +30,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { getRelativeTime } from "../utils/dates";
+import { ReviewsService, type SellerStats } from "../services/reviews";
 
 
 
@@ -90,6 +91,31 @@ export function ProductDetails({
   sellerVerificationStatus,
   sellerProfile
 }: ProductDetailsProps) {
+  // State for seller statistics
+  const [sellerStats, setSellerStats] = useState<SellerStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch seller statistics
+  useEffect(() => {
+    const fetchSellerStats = async () => {
+      if (!product.sellerId) return;
+      
+      setLoadingStats(true);
+      try {
+        console.log('🔍 Fetching seller stats for:', product.sellerId);
+        const stats = await ReviewsService.getSellerStats(product.sellerId);
+        console.log('📊 Seller stats received:', stats);
+        setSellerStats(stats);
+      } catch (error) {
+        console.error('❌ Error fetching seller stats:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchSellerStats();
+  }, [product.sellerId]);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price);
   };
@@ -113,13 +139,32 @@ export function ProductDetails({
       : 'Cash on Pickup, Bank Transfer, 50% Advance, 50% on Delivery, Mobile Payment'
   };
 
-  // Use dynamic seller data when available, fall back to reasonable defaults
+  // Use real seller data when available, fall back to reasonable defaults
   const sellerDetails = {
-    rating: sellerProfile?.rating || 4.2,
-    totalReviews: sellerProfile?.totalReviews || (product.sellerType === 'farmer' ? 15 : 28),
+    rating: sellerStats?.rating || sellerProfile?.rating || 4.0,
+    totalReviews: sellerStats?.totalReviews || sellerProfile?.totalReviews || 0,
     yearsActive: sellerProfile?.yearsActive || (sellerProfile?.experience ? parseInt(sellerProfile.experience.split(' ')[0]) || 1 : (product.sellerType === 'farmer' ? 5 : 8)),
-    responseTime: sellerProfile?.responseTime || (product.sellerType === 'farmer' ? '3 hours' : '1 hour')
+    responseTime: sellerStats?.responseTime || sellerProfile?.responseTime || 'Within 24 hours'
   };
+
+  // Debug logging
+  console.log('🔍 Seller details calculation:', {
+    sellerStats,
+    sellerProfile,
+    finalDetails: sellerDetails,
+    loadingStats,
+    productSellerId: product.sellerId
+  });
+  
+  // Force a test call to ReviewsService
+  useEffect(() => {
+    console.log('🧪 Testing ReviewsService directly...');
+    ReviewsService.getSellerStats('test-id').then(result => {
+      console.log('🧪 ReviewsService test result:', result);
+    }).catch(error => {
+      console.log('🧪 ReviewsService test error:', error);
+    });
+  }, []);
 
   // Check if current user is the seller of this product
   const isOwnProduct = currentUserId && product.sellerId === currentUserId;
@@ -229,18 +274,18 @@ export function ProductDetails({
         
         {/* Title section */}
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">{product.name}</h1>
+          <h1 className="text-xl md:text-2xl font-bold">{product.name}</h1>
           <p className="text-muted-foreground">Product Details</p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Main Product Info */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3 lg:space-y-4">
           {/* Product Image and Basic Info */}
           <Card className="border-primary/30">
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="p-3 lg:p-4">
+              <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
                 <div>
                   {/* Dynamic Image Gallery with Navigation */}
                   {productImages.length > 0 ? (
@@ -334,14 +379,14 @@ export function ProductDetails({
                         if (product.price && product.price > 0) {
                           return (
                             <>
-                              <span className="text-3xl font-bold">{formatPrice(product.price)} MMK</span>
+                              <span className="text-xl md:text-2xl font-bold">{formatPrice(product.price)} MMK</span>
                               <span className="text-muted-foreground">per {product.unit}</span>
                             </>
                           );
                         } else {
                           return (
                             <>
-                              <span className="text-3xl font-bold">Contact</span>
+                              <span className="text-xl md:text-2xl font-bold">Contact</span>
                               <span className="text-muted-foreground">for price</span>
                             </>
                           );
@@ -379,35 +424,36 @@ export function ProductDetails({
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     {isOwnProduct ? (
                       <>
                         {onEditProduct && (
-                          <Button onClick={() => onEditProduct(product)} className="flex-1">
-                            <Edit className="w-4 h-4 mr-2" />
+                          <Button onClick={() => onEditProduct(product)} className="flex-1 h-9 text-sm">
+                            <Edit className="w-3 h-3 mr-1" />
                             Edit Product
                           </Button>
                         )}
                         <Button 
                           variant="outline" 
                           onClick={() => onPriceCompare(product.id)}
-                          className="flex-1"
+                          className="flex-1 h-9 text-sm"
                         >
-                          <BarChart3 className="w-4 h-4 mr-2" />
+                          <BarChart3 className="w-3 h-3 mr-1" />
                           See Market Prices
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button onClick={() => onChat(product.id)} className="flex-1">
-                          <MessageCircle className="w-4 h-4 mr-2" />
+                        <Button onClick={() => onChat(product.id)} className="flex-1 h-9 text-sm">
+                          <MessageCircle className="w-3 h-3 mr-1" />
                           Contact Seller
                         </Button>
                         <Button 
                           variant="outline" 
                           onClick={() => onPriceCompare(product.id)}
+                          className="flex-1 h-9 text-sm"
                         >
-                          <BarChart3 className="w-4 h-4 mr-2" />
+                          <BarChart3 className="w-3 h-3 mr-1" />
                           Compare Prices
                         </Button>
                       </>
@@ -584,13 +630,19 @@ export function ProductDetails({
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-yellow-500" />
                   <span className="text-sm">
-                    {sellerDetails.rating.toFixed(1)} ({sellerDetails.totalReviews} reviews)
+                    {loadingStats ? (
+                      'Loading...'
+                    ) : (
+                      `${sellerDetails.rating.toFixed(1)} (${sellerDetails.totalReviews} review${sellerDetails.totalReviews !== 1 ? 's' : ''})`
+                    )}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Usually responds within {sellerDetails.responseTime}</span>
+                  <span className="text-sm">
+                    {loadingStats ? 'Loading...' : `Usually responds within ${sellerDetails.responseTime}`}
+                  </span>
                 </div>
               </div>
 

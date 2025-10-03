@@ -81,7 +81,7 @@ export const useProducts = () => {
       description: backendProduct.description,
       additionalNotes: backendProduct.additional_notes,
       priceChange: backendProduct.price_change || 0,
-      lastUpdated: backendProduct.last_updated ? new Date(backendProduct.last_updated).toLocaleDateString() : new Date().toLocaleDateString()
+      lastUpdated: backendProduct.last_updated || new Date().toISOString()
     }
   }
 
