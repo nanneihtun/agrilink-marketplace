@@ -235,13 +235,18 @@ export default function App() {
   // Product management - use products from Supabase
   const allProducts = useMemo(() => {
     try {
+      console.log('🔍 App.tsx - allProducts calculation:', {
+        productsLength: products?.length || 0,
+        productsLoading,
+        products: products?.slice(0, 2) // Log first 2 products for debugging
+      });
       return products || [];
     } catch (error) {
       console.error("Error in allProducts calculation:", error);
       setCriticalError("Failed to load products. Please refresh the page.");
       return [];
     }
-  }, [products]);
+  }, [products, productsLoading]);
 
   // Initialize custom hooks with stable references
   const navigation = useNavigation({
@@ -337,10 +342,24 @@ export default function App() {
 
   // Memoized selectors with null checks - optimized dependencies
   const selectedProduct = useMemo(
-    () =>
-      selectedChat
+    () => {
+      const product = selectedChat
         ? allProducts.find((p) => p.id === selectedChat)
-        : null,
+        : null;
+      
+      console.log('🔍 App.tsx - selectedProduct calculation:', {
+        selectedChat,
+        allProductsLength: allProducts.length,
+        foundProduct: product ? {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: product.quantity
+        } : null
+      });
+      
+      return product;
+    },
     [selectedChat, allProducts.length], // Use length to prevent unnecessary recalcs
   );
 

@@ -28,6 +28,7 @@ interface OfferCardProps {
   onDecline?: (offerId: string) => void;
   onUpdateStatus?: (offerId: string, status: Offer['status'], updates?: any) => void;
   onMarkCompleted?: (offerId: string) => void;
+  onModify?: (offerId: string, updates: Partial<Pick<Offer, 'price' | 'quantity' | 'deliveryTerms' | 'notes'>>) => void;
 }
 
 export function OfferCard({ 
@@ -36,11 +37,19 @@ export function OfferCard({
   onAccept, 
   onDecline, 
   onUpdateStatus,
-  onMarkCompleted
+  onMarkCompleted,
+  onModify
 }: OfferCardProps) {
   const [showTrackingForm, setShowTrackingForm] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState(offer.trackingNumber || "");
   const [deliveryAddress, setDeliveryAddress] = useState(offer.deliveryAddress || "");
+  
+  // State for modifying offers
+  const [isModifying, setIsModifying] = useState(false);
+  const [modifiedPrice, setModifiedPrice] = useState(offer.price);
+  const [modifiedQuantity, setModifiedQuantity] = useState(offer.quantity);
+  const [modifiedDeliveryTerms, setModifiedDeliveryTerms] = useState(offer.deliveryTerms || "");
+  const [modifiedNotes, setModifiedNotes] = useState(offer.notes || "");
 
   // Check if offer is expired
   const isExpired = offer.validUntil ? new Date(offer.validUntil) < new Date() : false;
@@ -57,6 +66,8 @@ export function OfferCard({
   const canMarkDelivered = isBuyer && offer.status === "shipped";
   const canMarkCompleted = (isSeller || isBuyer) && offer.status === "delivered";
   const canCancel = (isSeller || isBuyer) && ["pending", "accepted", "in_progress"].includes(offer.status);
+  const canModify = isBuyer && offer.status === "pending" && !isExpired;
+  const canComplete = canMarkCompleted;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price) + ' MMK';

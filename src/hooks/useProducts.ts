@@ -23,9 +23,13 @@ export const useProducts = () => {
       
       
       // Fetch products from Supabase
+      console.log('🔄 Fetching products from Supabase...')
       const backendProducts = await productsAPI.getAll()
+      console.log('📦 Raw backend products:', backendProducts)
       const transformedProducts = backendProducts.map(transformBackendProduct)
+      console.log('🔄 Transformed products:', transformedProducts)
       setProducts(transformedProducts)
+      console.log('✅ Products set successfully, count:', transformedProducts.length)
     } catch (err) {
       console.error('Fetch products error:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch products')
@@ -37,10 +41,15 @@ export const useProducts = () => {
 
   // Transform backend product to frontend format (matches actual table schema)
   const transformBackendProduct = (backendProduct: any): Product => {
-    console.log('💾 Backend product images debug:', {
-      'backendProduct.images': backendProduct.images,
-      'backendProduct.image': backendProduct.image,
-      'images_length': backendProduct.images?.length || 0
+    console.log('💾 Backend product debug:', {
+      id: backendProduct.id,
+      name: backendProduct.name,
+      price: backendProduct.price,
+      priceType: typeof backendProduct.price,
+      unit: backendProduct.unit,
+      quantity: backendProduct.quantity,
+      seller_name: backendProduct.seller_name,
+      fullBackendProduct: backendProduct
     })
     
     return {
@@ -193,6 +202,11 @@ export const useProducts = () => {
 
   // Initial fetch
   useEffect(() => {
+    console.log('🔄 useProducts - Initial fetch starting...', {
+      isSupabaseConfigured: ENV.isSupabaseConfigured(),
+      supabaseUrl: ENV.SUPABASE_URL,
+      hasAnonKey: !!ENV.SUPABASE_ANON_KEY
+    });
     fetchProducts()
   }, [fetchProducts])
 

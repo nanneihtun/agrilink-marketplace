@@ -44,9 +44,14 @@ export function CreateOfferModal({
   console.log('🔍 CreateOfferModal product data:', {
     name: product.name,
     price: product.price,
+    priceType: typeof product.price,
     quantity: product.quantity,
     unit: product.unit,
-    category: product.category
+    category: product.category,
+    hasPrice: 'price' in product,
+    priceIsNumber: typeof product.price === 'number',
+    priceIsValid: !isNaN(product.price) && product.price > 0,
+    fullProduct: product
   });
 
   const [price, setPrice] = useState(product.price || 0);
@@ -101,6 +106,7 @@ export function CreateOfferModal({
     validUntil.setDate(validUntil.getDate() + parseInt(validityDays));
 
     const offer: Omit<Offer, "id" | "createdAt" | "acceptedAt" | "completedAt"> = {
+      conversationId: '', // Will be set when conversation is created
       productId: product.id,
       productName: product.name,
       sellerId,
@@ -126,7 +132,7 @@ export function CreateOfferModal({
   };
 
   const handleClose = () => {
-    setPrice(product.price);
+    setPrice(product.price || 0);
     setQuantity(1);
     setDeliveryLocation("");
     setDeliveryTerms("");
@@ -162,16 +168,22 @@ export function CreateOfferModal({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Listed Price</p>
-                  <p className="font-medium">{formatPrice(product.price)} per {product.unit || 'unit'}</p>
+                  <p className="font-medium">{formatPrice(product.price || 0)} per {product.unit || 'unit'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Available</p>
-                  <p className="font-medium">{product.quantity || 0} {product.unit || 'units'}</p>
+                  <p className="font-medium">{product.quantity || '0 units'}</p>
                 </div>
               </div>
-              <div className="mt-2">
-                <p className="text-muted-foreground text-sm">Seller</p>
-                <p className="font-medium">{sellerName}</p>
+              <div className="mt-2 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-sm">Seller</p>
+                  <p className="font-medium">{sellerName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Buyer</p>
+                  <p className="font-medium">{buyerName}</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -208,7 +220,7 @@ export function CreateOfferModal({
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
-                  max={product.quantity}
+                  placeholder="Enter quantity"
                   className={errors.quantity ? "border-red-500" : ""}
                 />
                 {errors.quantity && (

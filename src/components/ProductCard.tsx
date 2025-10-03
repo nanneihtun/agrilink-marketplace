@@ -122,39 +122,11 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
             onClick={() => onViewDetails(product.id)}
           />
           
-          {/* Compact Image Thumbnails for Multiple Photos - Shopee Style */}
-          {product.images && product.images.length > 1 && (
-            <div className="absolute bottom-2 left-2 flex gap-1">
-              {product.images.slice(0, 3).map((image, index) => (
-                <div
-                  key={index}
-                  className="relative"
-                >
-                  <ImageWithFallback
-                    src={image}
-                    alt={`${product.name} - ${index + 1}`}
-                    className="w-6 h-6 object-cover rounded border border-white/70 cursor-pointer hover:border-white transition-all shadow-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDetails(product.id);
-                    }}
-                  />
-                  {/* Show count overlay on last thumbnail if more than 3 images */}
-                  {index === 2 && product.images && product.images.length > 3 && (
-                    <div className="absolute inset-0 bg-black/60 rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">+{product.images.length - 3}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          
           {/* Account type badge in top-right corner */}
           <div className="absolute top-2 right-2">
             <AccountTypeBadge 
               userType={product.sellerType}
-              accountType={sellerVerificationStatus?.accountType || 'individual'}
+              accountType="individual"
               size="sm"
             />
           </div>

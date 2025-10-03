@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import type { Product } from "../data/products";
+import { myanmarRegions } from "../utils/regions";
 
 interface SimplifiedProductFormProps {
   currentUser: any;
@@ -68,7 +69,7 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
         price: editingProduct.price || 0,
         unit: editingProduct.unit || '',
         location: editingProduct.location || currentUser?.location || '',
-        region: editingProduct.region || currentUser?.region || '',
+        region: editingProduct.region || currentUser?.region || 'yangon', // Default to Yangon if no region set
         sellerType: editingProduct.sellerType || currentUser?.userType || 'farmer',
         sellerName: editingProduct.sellerName || currentUser?.name || '',
         image: editingProduct.image || '',
@@ -99,7 +100,7 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
       price: 0,
       unit: '',
       location: currentUser?.location || '',
-      region: currentUser?.region || '',
+      region: currentUser?.region || 'yangon', // Default to Yangon if no region set
       sellerType: currentUser?.userType || 'farmer',
       sellerName: currentUser?.name || '',
       image: '',
@@ -251,6 +252,14 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
     
     if (!formData.minimumOrder?.trim()) {
       errors.minimumOrder = 'Minimum order is required';
+    }
+    
+    if (!formData.region?.trim()) {
+      errors.region = 'Region is required';
+    }
+    
+    if (!formData.location?.trim()) {
+      errors.location = 'City/Location is required';
     }
     
     if (formData.deliveryOptions.length === 0) {
@@ -745,6 +754,41 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
                 onChange={(e) => setFormData(prev => ({ ...prev, minimumOrder: e.target.value }))}
                 className={`h-11 ${validationErrors.minimumOrder ? 'border-destructive' : ''}`}
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="region">Region *</Label>
+              <Select 
+                value={formData.region} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, region: value, location: '' }))}
+              >
+                <SelectTrigger className={`h-11 ${validationErrors.region ? 'border-destructive' : ''}`}>
+                  <SelectValue placeholder="Select your region" />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  {Object.entries(myanmarRegions).map(([key, region]) => (
+                    <SelectItem key={key} value={key}>{region.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">City/Location *</Label>
+              <Select 
+                value={formData.location} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                disabled={!formData.region}
+              >
+                <SelectTrigger className={`h-11 ${validationErrors.location ? 'border-destructive' : ''}`}>
+                  <SelectValue placeholder={formData.region ? "Select your city" : "Select region first"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  {formData.region && myanmarRegions[formData.region as keyof typeof myanmarRegions]?.cities.map((city) => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

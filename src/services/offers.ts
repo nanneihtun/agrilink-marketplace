@@ -89,34 +89,6 @@ export class OffersService {
     return data.map(offer => this.mapOfferFromDB(offer));
   }
 
-  /**
-   * Update offer status
-   */
-  static async updateOfferStatus(
-    offerId: string, 
-    status: Offer['status'], 
-    updates: Partial<Pick<Offer, 'notes' | 'deliveryTerms' | 'deliveryLocation'>>
-  ): Promise<Offer> {
-    const updateData: any = { status };
-    
-    if (updates.notes) updateData.notes = updates.notes;
-    if (updates.deliveryTerms) updateData.delivery_terms = updates.deliveryTerms;
-    if (updates.deliveryLocation) updateData.delivery_location = updates.deliveryLocation;
-
-    const { data, error } = await supabase
-      .from('offers')
-      .update(updateData)
-      .eq('id', offerId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Failed to update offer:', error);
-      throw error;
-    }
-
-    return this.mapOfferFromDB(data);
-  }
 
   /**
    * Get offers for a user (buyer or seller)
