@@ -471,7 +471,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerRating={conversation.otherParty.rating}
                 productName={conversation.productName}
                 productId={conversation.productId}
-                sellerId={effectiveCurrentUser?.id || conversation.otherParty.id}
+                sellerId={conversation.otherParty.id}
                 conversationId={conversation.id}
                 onClose={() => setSelectedConversation(null)}
                 sellerVerified={conversation.otherParty.verified}
@@ -504,7 +504,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerRating={conversation.otherParty.rating}
                 productName={conversation.productName}
                 productId={conversation.productId}
-                sellerId={effectiveCurrentUser?.id || conversation.otherParty.id}
+                sellerId={conversation.otherParty.id}
                 conversationId={conversation.id}
                 onClose={() => setSelectedConversation(null)}
                 sellerVerified={conversation.otherParty.verified}
