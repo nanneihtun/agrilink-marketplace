@@ -514,20 +514,20 @@
   }
 
   input:not([class*="bg-background"]):not([class*="bg-white"]), input[type="text"]:not([class*="bg-background"]):not([class*="bg-white"]), input[type="email"]:not([class*="bg-background"]):not([class*="bg-white"]), input[type="password"]:not([class*="bg-background"]):not([class*="bg-white"]), input[type="number"]:not([class*="bg-background"]):not([class*="bg-white"]), input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]), textarea:not([class*="bg-background"]):not([class*="bg-white"]), select:not([class*="bg-background"]):not([class*="bg-white"]) {
-    background-color: #a4835b0f !important;
-    border: 1px solid #a4835b80 !important;
+    background-color: #2d5a270f !important;
+    border: 1px solid #2d5a2780 !important;
     border-radius: .5rem !important;
   }
 
   input:not([class*="bg-background"]):not([class*="bg-white"]):focus, input[type="text"]:not([class*="bg-background"]):not([class*="bg-white"]):focus, input[type="email"]:not([class*="bg-background"]):not([class*="bg-white"]):focus, input[type="password"]:not([class*="bg-background"]):not([class*="bg-white"]):focus, input[type="number"]:not([class*="bg-background"]):not([class*="bg-white"]):focus, input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]):focus, textarea:not([class*="bg-background"]):not([class*="bg-white"]):focus, select:not([class*="bg-background"]):not([class*="bg-white"]):focus {
-    border-color: #a4835bcc !important;
+    border-color: #2d5a27cc !important;
     outline: none !important;
-    box-shadow: 0 0 0 2px #a4835b33 !important;
+    box-shadow: 0 0 0 2px #2d5a2733 !important;
   }
 
   .flex.h-10.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]), .flex.h-9.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]), [data-state]:not([class*="bg-background"]):not([class*="bg-white"]) {
-    background-color: #a4835b0f !important;
-    border: 1px solid #a4835b80 !important;
+    background-color: #2d5a270f !important;
+    border: 1px solid #2d5a2780 !important;
   }
 
   [role="listbox"], [data-radix-popper-content-wrapper], [data-radix-select-content] {
@@ -545,7 +545,7 @@
 
   [data-slot="select-item"]:hover, [data-slot="select-item"]:focus, [data-slot="select-item"][data-highlighted], [data-slot="select-item"][data-state="checked"], [data-radix-select-item]:hover, [data-radix-select-item]:focus, [data-radix-select-item][data-highlighted], [data-radix-select-item][data-state="checked"], .relative.flex.w-full.cursor-default:hover, .relative.flex.w-full.cursor-default:focus, .relative.flex.w-full.cursor-default[data-highlighted], [role="option"]:hover, [role="option"]:focus, [role="option"][data-highlighted], div[data-slot="select-item"]:hover, div[data-slot="select-item"]:focus, div[data-slot="select-item"][data-highlighted] {
     color: var(--foreground) !important;
-    background-color: #a4835b33 !important;
+    background-color: #2d5a2733 !important;
   }
 
   [data-slot="select-item"]:hover *, [data-slot="select-item"]:focus *, [data-slot="select-item"][data-highlighted] *, [data-radix-select-item]:hover *, [data-radix-select-item]:focus *, [data-radix-select-item][data-highlighted] * {
@@ -3307,7 +3307,7 @@
 
   @media (hover: hover) {
     .hover\:bg-\[rgba\(164\,131\,91\,0\.15\)\]:hover {
-      background-color: #a4835b26;
+      background-color: #2d5a2726;
     }
   }
 
@@ -3649,7 +3649,7 @@
   }
 
   .focus\:bg-\[rgba\(164\,131\,91\,0\.2\)\]:focus {
-    background-color: #a4835b33;
+    background-color: #2d5a2733;
   }
 
   .focus\:bg-accent:focus {
@@ -3825,7 +3825,7 @@
   }
 
   .data-\[highlighted\]\:bg-\[rgba\(164\,131\,91\,0\.2\)\][data-highlighted] {
-    background-color: #a4835b33;
+    background-color: #2d5a2733;
   }
 
   .data-\[highlighted\]\:text-foreground[data-highlighted] {
@@ -4899,37 +4899,37 @@
   --card-foreground: #2a2a2a;
   --popover: #fff;
   --popover-foreground: #2a2a2a;
-  --primary: #a4835b;
+  --primary: #2d5a27;
   --primary-foreground: #fff;
   --secondary: #f8f8f8;
   --secondary-foreground: #2a2a2a;
   --muted: #f5f5f5;
   --muted-foreground: #6b6b6b;
-  --accent: #a4835b;
+  --accent: #2d5a27;
   --accent-foreground: #fff;
   --destructive: #dc2626;
   --destructive-foreground: #fff;
   --border: #e5e5e5;
   --input: transparent;
   --input-background: #fefefe;
-  --switch-background: #a4835b;
+  --switch-background: #2d5a27;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #a4835b;
-  --chart-1: #a4835b;
-  --chart-2: #8b7355;
-  --chart-3: #6b5b4f;
-  --chart-4: #9c7e5e;
-  --chart-5: #b8946f;
+  --ring: #2d5a27;
+  --chart-1: #2d5a27;
+  --chart-2: #3e7a35;
+  --chart-3: #1f4a1a;
+  --chart-4: #4a8a42;
+  --chart-5: #5b9a52;
   --radius: .625rem;
   --sidebar: #fff;
   --sidebar-foreground: #2a2a2a;
-  --sidebar-primary: #a4835b;
+  --sidebar-primary: #2d5a27;
   --sidebar-primary-foreground: #fff;
   --sidebar-accent: #f8f8f8;
   --sidebar-accent-foreground: #2a2a2a;
   --sidebar-border: #e5e5e5;
-  --sidebar-ring: #a4835b;
+  --sidebar-ring: #2d5a27;
 }
 
 .dark {
@@ -4939,34 +4939,34 @@
   --card-foreground: #fff;
   --popover: #2a2a2a;
   --popover-foreground: #fff;
-  --primary: #a4835b;
+  --primary: #2d5a27;
   --primary-foreground: #fff;
   --secondary: #3a3a3a;
   --secondary-foreground: #fff;
   --muted: #404040;
   --muted-foreground: #a3a3a3;
-  --accent: #a4835b;
+  --accent: #2d5a27;
   --accent-foreground: #fff;
   --destructive: #dc2626;
   --destructive-foreground: #fff;
   --border: #404040;
   --input: #2a2a2a;
-  --ring: #a4835b;
+  --ring: #2d5a27;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: #a4835b;
-  --chart-2: #8b7355;
-  --chart-3: #6b5b4f;
-  --chart-4: #9c7e5e;
-  --chart-5: #b8946f;
+  --chart-1: #2d5a27;
+  --chart-2: #3e7a35;
+  --chart-3: #1f4a1a;
+  --chart-4: #4a8a42;
+  --chart-5: #5b9a52;
   --sidebar: #2a2a2a;
   --sidebar-foreground: #fff;
-  --sidebar-primary: #a4835b;
+  --sidebar-primary: #2d5a27;
   --sidebar-primary-foreground: #fff;
   --sidebar-accent: #3a3a3a;
   --sidebar-accent-foreground: #fff;
   --sidebar-border: #404040;
-  --sidebar-ring: #a4835b;
+  --sidebar-ring: #2d5a27;
 }
 
 html {

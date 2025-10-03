@@ -8,37 +8,37 @@
   --card-foreground: #2A2A2A;
   --popover: #ffffff;
   --popover-foreground: #2A2A2A;
-  --primary: #A4835B;
+  --primary: #2D5A27;
   --primary-foreground: #ffffff;
   --secondary: #f8f8f8;
   --secondary-foreground: #2A2A2A;
   --muted: #f5f5f5;
   --muted-foreground: #6B6B6B;
-  --accent: #A4835B;
+  --accent: #2D5A27;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e5e5e5;
   --input: transparent;
   --input-background: #fefefe;
-  --switch-background: #A4835B;
+  --switch-background: #2D5A27;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #A4835B;
-  --chart-1: #A4835B;
-  --chart-2: #8B7355;
-  --chart-3: #6B5B4F;
-  --chart-4: #9C7E5E;
-  --chart-5: #B8946F;
+  --ring: #2D5A27;
+  --chart-1: #2D5A27;
+  --chart-2: #3E7A35;
+  --chart-3: #1F4A1A;
+  --chart-4: #4A8A42;
+  --chart-5: #5B9A52;
   --radius: 0.625rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #2A2A2A;
-  --sidebar-primary: #A4835B;
+  --sidebar-primary: #2D5A27;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f8f8f8;
   --sidebar-accent-foreground: #2A2A2A;
   --sidebar-border: #e5e5e5;
-  --sidebar-ring: #A4835B;
+  --sidebar-ring: #2D5A27;
 }
 
 .dark {
@@ -48,34 +48,34 @@
   --card-foreground: #ffffff;
   --popover: #2A2A2A;
   --popover-foreground: #ffffff;
-  --primary: #A4835B;
+  --primary: #2D5A27;
   --primary-foreground: #ffffff;
   --secondary: #3a3a3a;
   --secondary-foreground: #ffffff;
   --muted: #404040;
   --muted-foreground: #a3a3a3;
-  --accent: #A4835B;
+  --accent: #2D5A27;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #404040;
   --input: #2A2A2A;
-  --ring: #A4835B;
+  --ring: #2D5A27;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: #A4835B;
-  --chart-2: #8B7355;
-  --chart-3: #6B5B4F;
-  --chart-4: #9C7E5E;
-  --chart-5: #B8946F;
+  --chart-1: #2D5A27;
+  --chart-2: #3E7A35;
+  --chart-3: #1F4A1A;
+  --chart-4: #4A8A42;
+  --chart-5: #5B9A52;
   --sidebar: #2A2A2A;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #A4835B;
+  --sidebar-primary: #2D5A27;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #3a3a3a;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #404040;
-  --sidebar-ring: #A4835B;
+  --sidebar-ring: #2D5A27;
 }
 
 @theme inline {
@@ -188,7 +188,7 @@ html {
   font-size: var(--font-size);
 }
 
-/* Form styling with brown accents - simplified */
+/* Form styling with green agri accents - simplified */
 @layer base {
   /* Target all form inputs except filter components */
   input:not([class*="bg-background"]):not([class*="bg-white"]),
@@ -199,8 +199,8 @@ html {
   input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]),
   textarea:not([class*="bg-background"]):not([class*="bg-white"]),
   select:not([class*="bg-background"]):not([class*="bg-white"]) {
-    border: 1px solid rgba(164, 131, 91, 0.5) !important;
-    background-color: rgba(164, 131, 91, 0.06) !important;
+    border: 1px solid rgba(45, 90, 39, 0.5) !important;
+    background-color: rgba(45, 90, 39, 0.06) !important;
     border-radius: 0.5rem !important;
   }
   
@@ -213,8 +213,8 @@ html {
   input[type="tel"]:not([class*="bg-background"]):not([class*="bg-white"]):focus,
   textarea:not([class*="bg-background"]):not([class*="bg-white"]):focus,
   select:not([class*="bg-background"]):not([class*="bg-white"]):focus {
-    border-color: rgba(164, 131, 91, 0.8) !important;
-    box-shadow: 0 0 0 2px rgba(164, 131, 91, 0.2) !important;
+    border-color: rgba(45, 90, 39, 0.8) !important;
+    box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.2) !important;
     outline: none !important;
   }
   
@@ -222,8 +222,8 @@ html {
   .flex.h-10.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]),
   .flex.h-9.w-full.rounded-md.border:not([class*="bg-background"]):not([class*="bg-white"]),
   [data-state]:not([class*="bg-background"]):not([class*="bg-white"]) {
-    border: 1px solid rgba(164, 131, 91, 0.5) !important;
-    background-color: rgba(164, 131, 91, 0.06) !important;
+    border: 1px solid rgba(45, 90, 39, 0.5) !important;
+    background-color: rgba(45, 90, 39, 0.06) !important;
   }
   
   /* Fix dropdown/select content transparency issues */
@@ -263,7 +263,7 @@ html {
   [role="option"]:hover,
   [role="option"]:focus,
   [role="option"][data-highlighted] {
-    background-color: rgba(164, 131, 91, 0.2) !important;
+    background-color: rgba(45, 90, 39, 0.2) !important;
     color: var(--foreground) !important;
   }
   
@@ -271,7 +271,7 @@ html {
   div[data-slot="select-item"]:hover,
   div[data-slot="select-item"]:focus,
   div[data-slot="select-item"][data-highlighted] {
-    background-color: rgba(164, 131, 91, 0.2) !important;
+    background-color: rgba(45, 90, 39, 0.2) !important;
     color: var(--foreground) !important;
   }
   
