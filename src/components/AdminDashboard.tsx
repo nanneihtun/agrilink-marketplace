@@ -20,9 +20,10 @@ import {
   Package, 
   DollarSign,
   TrendingUp,
-  Ban
+  Ban,
+  RefreshCw
 } from 'lucide-react';
-import { AdminVerificationPanel } from './AdminVerificationPanel';
+import { AdminVerificationPanel } from './AdminVerificationPanelNew';
 import { supabase } from '../lib/supabase';
 
 interface AdminStats {
@@ -74,65 +75,87 @@ export function AdminDashboard({ currentAdmin, onBack, onNavigateToVerification 
     { id: '2', amount: 300, buyer: 'Mike Johnson', seller: 'John Doe', date: '4 hours ago' },
   ]);
 
+  // Function to fetch admin data
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch total users count (excluding admins)
+      const { count: totalUsersCount } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .neq('user_type', 'admin');
+
+      // Debug: Check what verification statuses exist in the database
+      const { data: debugUsers } = await supabase
+        .from('users')
+        .select('verification_status, user_type')
+        .neq('user_type', 'admin');
+      
+      console.log('🔍 Debug - All verification statuses:', debugUsers?.map(u => u.verification_status));
+      console.log('🔍 Debug - Under review count:', debugUsers?.filter(u => u.verification_status === 'under_review').length);
+      console.log('🔍 Debug - Pending count:', debugUsers?.filter(u => u.verification_status === 'pending').length);
+
+      // Fetch pending verifications count (excluding admins)
+      // Only count 'under_review' status as these are users who have actually submitted for review
+      const { count: pendingVerificationsCount } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('verification_status', 'under_review')
+        .neq('user_type', 'admin');
+
+      // Fetch total products count
+      const { count: totalProductsCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+      // Note: We no longer fetch detailed verification requests data
+      // since we redirect to the dedicated verification page
+
+      // Fetch recent users (excluding admins)
+      const { data: recentUsersData } = await supabase
+        .from('users')
+        .select('id, name, user_type, created_at, email')
+        .neq('user_type', 'admin')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Update stats
+      setStats({
+        totalUsers: totalUsersCount || 0,
+        pendingVerifications: pendingVerificationsCount || 0,
+        totalProducts: totalProductsCount || 0,
+        activeTransactions: 156, // Keep mock data for now
+        reportedContent: 8, // Keep mock data for now
+        platformRevenue: 45670, // Keep mock data for now
+      });
+
+      // Note: We no longer update verification requests state
+      // since we redirect to the dedicated verification page
+
+      // Update recent users
+      setRecentUsers(recentUsersData || []);
+
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch real data from Supabase
   useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch total users count (excluding admins)
-        const { count: totalUsersCount } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .neq('user_type', 'admin');
+    fetchAdminData();
+  }, []);
 
-        // Fetch pending verifications count (excluding admins)
-        const { count: pendingVerificationsCount } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('verification_status', 'pending')
-          .neq('user_type', 'admin');
-
-        // Fetch total products count
-        const { count: totalProductsCount } = await supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true });
-
-        // Note: We no longer fetch detailed verification requests data
-        // since we redirect to the dedicated verification page
-
-        // Fetch recent users (excluding admins)
-        const { data: recentUsersData } = await supabase
-          .from('users')
-          .select('id, name, user_type, created_at, email')
-          .neq('user_type', 'admin')
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        // Update stats
-        setStats({
-          totalUsers: totalUsersCount || 0,
-          pendingVerifications: pendingVerificationsCount || 0,
-          totalProducts: totalProductsCount || 0,
-          activeTransactions: 156, // Keep mock data for now
-          reportedContent: 8, // Keep mock data for now
-          platformRevenue: 45670, // Keep mock data for now
-        });
-
-        // Note: We no longer update verification requests state
-        // since we redirect to the dedicated verification page
-
-        // Update recent users
-        setRecentUsers(recentUsersData || []);
-
-      } catch (error) {
-        console.error('Error fetching admin data:', error);
-      } finally {
-        setLoading(false);
-      }
+  // Refresh data when window regains focus (e.g., when returning from verification panel)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchAdminData();
     };
 
-    fetchAdminData();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const handleProductAction = (productId: string, action: string) => {
@@ -160,9 +183,21 @@ export function AdminDashboard({ currentAdmin, onBack, onNavigateToVerification 
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-gray-600">Welcome back, {currentAdmin.name}</p>
           </div>
-          <Button variant="outline" onClick={onBack}>
-            ← Back to App
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchAdminData}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button variant="outline" onClick={onBack}>
+              ← Back to App
+            </Button>
+          </div>
         </div>
 
         {/* Key Statistics - Split into 2 rows - ABOVE Quick Actions */}

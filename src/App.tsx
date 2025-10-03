@@ -23,7 +23,7 @@ import { AccountTypeVerification } from "./components/AccountTypeVerification";
 import { Profile } from "./components/Profile";
 import { Messages } from "./components/Messages";
 import { VerificationPrompt } from "./components/VerificationPrompt";
-import { AdminVerificationPanel } from "./components/AdminVerificationPanel";
+import { AdminVerificationPanel } from "./components/AdminVerificationPanelNew";
 import { AdminDashboard } from "./components/AdminDashboard";
 // SimpleVerificationTester removed - debug component
 import { AboutUs } from "./components/AboutUs";
@@ -186,20 +186,6 @@ export default function App() {
     updateProfile,
   } = useAuth();
   
-  // Debug current user state for chat troubleshooting
-  useEffect(() => {
-    if (currentUser) {
-      console.log('🔍 App.tsx currentUser:', {
-        id: currentUser.id,
-        email: currentUser.email,
-        name: currentUser.name,
-        authLoading
-      });
-    } else {
-      console.log('🔍 App.tsx currentUser: null, authLoading:', authLoading);
-    }
-  }, [currentUser?.id, authLoading]);
-  
   const {
     products,
     loading: productsLoading,
@@ -236,11 +222,6 @@ export default function App() {
   // Product management - use products from Supabase
   const allProducts = useMemo(() => {
     try {
-      console.log('🔍 App.tsx - allProducts calculation:', {
-        productsLength: products?.length || 0,
-        productsLoading,
-        products: products?.slice(0, 2) // Log first 2 products for debugging
-      });
       return products || [];
     } catch (error) {
       console.error("Error in allProducts calculation:", error);
@@ -285,32 +266,17 @@ export default function App() {
     setAuthModal,
   });
 
-  // Set initial view based on user type when user loads - optimized to prevent loops
+  // Set initial view - always start with marketplace for better UX
   const initialViewSet = useRef(false);
   useEffect(() => {
-    if (currentUser && !authLoading && !initialViewSet.current) {
-      const allowedViews = [
-        "verification", "profile", "edit-profile", "messages", "seller-storefront",
-        "marketplace", "add-listing", "product-details", "price-comparison",
-        "about-us", "contact-us", "faq", "admin-verification", "deals"
-      ];
-      
-      if (allowedViews.includes(currentView)) {
-        initialViewSet.current = true;
-        return; // Don't redirect if already on an allowed view
-      }
-      
-      if (currentUser.userType === "farmer" || currentUser.userType === "trader") {
-        setCurrentView("dashboard");
-      } else if (currentUser.userType === "buyer") {
-        setCurrentView("dashboard");
-      } else if (currentUser.userType === "admin") {
+    // Show marketplace immediately, even without authentication
+    if (!initialViewSet.current) {
+      if (currentView !== "marketplace") {
         setCurrentView("marketplace");
       }
-      
       initialViewSet.current = true;
     }
-  }, [currentUser?.id, currentUser?.userType, authLoading]);
+  }, []);
 
   // Reset preview mode when navigating away from storefront
   useEffect(() => {
@@ -586,31 +552,8 @@ export default function App() {
     return realListings;
   }, [productToView?.id, productToView?.name, productToView?.price, allProducts.length]);
 
-  // Show loading screen during initial backend check and auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto animate-pulse">
-            <Leaf className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold">AgriLink</h2>
-          <p className="text-muted-foreground">
-            {"Loading..."}
-          </p>
-          <div className="w-32 h-1 bg-muted rounded-full mx-auto overflow-hidden">
-            <div className="w-full h-full bg-primary rounded-full animate-pulse"></div>
-          </div>
-          {/* Loading indicator */}
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-muted-foreground">
-              Initializing application...
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Show loading screen only for critical errors, not for auth loading
+  // This allows the marketplace to show immediately while auth loads in background
 
   return (
     <ErrorBoundary>
@@ -866,14 +809,14 @@ export default function App() {
                   />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {authLoading ? (
-                      // Show loading skeleton while authentication is in progress
+                    {productsLoading ? (
+                      // Show loading skeleton while products are loading
                       Array.from({ length: 6 }).map((_, index) => (
                         <div key={index} className="animate-pulse">
                           <div className="bg-gray-200 rounded-lg h-64"></div>
                         </div>
                       ))
-                    ) : (
+                    ) : filteredProducts.length > 0 ? (
                       filteredProducts.map((product) => {
                       const verificationStatus =
                         getSellerVerificationStatus(
@@ -910,35 +853,38 @@ export default function App() {
                         />
                       );
                     })
+                    ) : (
+                      <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center mx-auto mb-4">
+                          <Leaf className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">No Products Available</h3>
+                        <p className="text-muted-foreground mb-4">
+                          {currentUser 
+                            ? "There are no products listed yet. Be the first to add a product!"
+                            : "There are no products listed yet. Sign up to add your first product!"
+                          }
+                        </p>
+                        <div className="flex justify-center items-center space-x-2">
+                          {currentUser ? (
+                            <Button onClick={productManagement.handleShowAddListing}>
+                              Add Your First Product
+                            </Button>
+                          ) : (
+                            <>
+                              <Button onClick={navigation.handleGoToRegister}>
+                                Sign Up to Add Products
+                              </Button>
+                              <Button variant="outline" onClick={navigation.handleGoToLogin}>
+                                Sign In
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {filteredProducts.length === 0 && (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground">
-                        No products found matching your
-                        criteria.
-                      </p>
-                      <Button
-                        variant="outline"
-                        className="mt-4"
-                        onClick={() =>
-                          setFilters({
-                            search: "",
-                            category: "",
-                            location: "",
-                            region: "",
-                            city: "",
-                            sellerType: "",
-                            priceRange: "",
-                            sortBy: "newest",
-                          })
-                        }
-                      >
-                        Clear Filters
-                      </Button>
-                    </div>
-                  )}
                 </section>
               </div>
             )}

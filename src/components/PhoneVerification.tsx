@@ -18,6 +18,13 @@ interface PhoneVerificationProps {
 export function PhoneVerification({ currentUser, onVerificationComplete, onBack }: PhoneVerificationProps) {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState(currentUser.phone || '');
+  
+  // Update phone number when currentUser changes
+  useEffect(() => {
+    if (currentUser.phone) {
+      setPhoneNumber(currentUser.phone);
+    }
+  }, [currentUser.phone]);
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -162,7 +169,7 @@ export function PhoneVerification({ currentUser, onVerificationComplete, onBack 
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+959123456789"
+                  placeholder={phoneNumber ? phoneNumber : "+959123456789"}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   disabled={isLoading || !isEditingPhone}

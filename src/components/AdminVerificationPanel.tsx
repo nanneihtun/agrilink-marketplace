@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Textarea } from "./ui/textarea";
@@ -37,22 +36,25 @@ interface VerificationRequest {
   verificationSubmitted: boolean;
   verificationDocuments?: {
     idCard?: {
-      front?: string;
-      back?: string;
-      status?: 'pending' | 'verified' | 'rejected';
+      status?: 'pending' | 'uploaded' | 'verified' | 'rejected';
       name?: string;
+      uploadedAt?: string;
+      data?: string;
     };
     businessLicense?: {
-      document?: string;
-      status?: 'pending' | 'verified' | 'rejected';
+      status?: 'pending' | 'uploaded' | 'verified' | 'rejected';
       name?: string;
+      uploadedAt?: string;
+      data?: string;
     };
     selfieWithId?: string;
     taxCertificate?: string;
     bankStatement?: string;
     farmCertification?: {
-      document?: string;
-      status?: 'pending' | 'verified' | 'rejected';
+      status?: 'pending' | 'uploaded' | 'verified' | 'rejected';
+      name?: string;
+      uploadedAt?: string;
+      data?: string;
     };
   };
   businessDetailsCompleted: boolean;
@@ -578,11 +580,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
   };
 
   const pendingRequests = requests.filter(r => 
-    r.verificationStatus === 'pending' || r.verificationStatus === 'under_review'
-  );
-  const processedRequests = requests.filter(r => 
-    r.verificationStatus === 'verified' || 
-    r.verificationStatus === 'rejected'
+    r.verificationStatus === 'under_review'
   );
 
   return (
@@ -651,27 +649,8 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
         </Card>
       </div>
 
-      {/* Requests Tabs */}
-      <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending">
-            Under Review ({pendingRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="processed">
-            Processed ({processedRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="sample-products">
-            Sample Products
-          </TabsTrigger>
-          <TabsTrigger value="storage">
-            Storage Management
-          </TabsTrigger>
-          <TabsTrigger value="debug">
-            Storage Debug
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="space-y-4">
+      {/* Pending Verification Requests */}
+      <div className="space-y-4">
           {pendingRequests.length === 0 ? (
             <Alert>
               <Clock className="w-4 h-4" />
@@ -803,6 +782,14 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
                                 {process.env.NODE_ENV === 'development' && (
                                   <div className="bg-gray-100 p-2 rounded text-xs">
                                     <strong>Debug - Verification Documents:</strong>
+                                    <pre>{JSON.stringify(selectedRequest.verificationDocuments, null, 2)}</pre>
+                                  </div>
+                                )}
+                                
+                                {/* Debug: Show raw verification documents data */}
+                                {process.env.NODE_ENV === 'development' && (
+                                  <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+                                    <strong>Debug - Raw verificationDocuments:</strong>
                                     <pre>{JSON.stringify(selectedRequest.verificationDocuments, null, 2)}</pre>
                                   </div>
                                 )}
@@ -949,7 +936,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
                                   <div className="border rounded-lg p-4 space-y-2">
                                     <Label>Farm Certification</Label>
                                     <div className="text-sm text-muted-foreground">
-                                      {selectedRequest.verificationDocuments?.farmCertification?.document && 
+                                      {selectedRequest.verificationDocuments?.farmCertification?.data && 
                                         <div>✓ Farm certification uploaded</div>
                                       }
                                       <Badge variant="outline" className="mt-2">
@@ -1043,84 +1030,7 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
               ))}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="processed" className="space-y-4">
-          {processedRequests.length === 0 ? (
-            <Alert>
-              <AlertTriangle className="w-4 h-4" />
-              <AlertDescription>
-                No processed verification requests yet.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid gap-4">
-              {processedRequests.map((request) => (
-                <Card key={request.id} className={
-                  request.status === 'approved' 
-                    ? 'border-green-200 bg-green-50/50' 
-                    : 'border-red-200 bg-red-50/50'
-                }>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          <span className="font-semibold">{request.userName}</span>
-                        </div>
-                        <Badge variant="secondary">
-                          {request.userType || 'Unknown'}
-                        </Badge>
-                        <Badge className={getStatusColor(request.status || 'pending')}>
-                          {request.status || 'pending'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm space-y-2">
-                      <p className="text-muted-foreground">
-                        <strong>Type:</strong> {getRequestTypeLabel(request)}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <strong>Reviewed:</strong> {request.reviewedAt ? new Date(request.reviewedAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        }) : 'N/A'}
-                      </p>
-                      <p className="text-muted-foreground">
-                        <strong>Reviewed by:</strong> {request.reviewedBy || 'N/A'}
-                      </p>
-                      {request.reviewNotes && (
-                        <p className="text-muted-foreground">
-                          <strong>Notes:</strong> {request.reviewNotes}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="sample-products" className="space-y-4">
-          <SampleProductManagement />
-        </TabsContent>
-
-        <TabsContent value="storage" className="space-y-4">
-          {/* No StorageMonitor needed with Supabase */}
-        </TabsContent>
-
-        <TabsContent value="debug" className="space-y-4">
-          <div className="text-center py-8 text-muted-foreground">
-            Debug panel removed - using Supabase backend
-          </div>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

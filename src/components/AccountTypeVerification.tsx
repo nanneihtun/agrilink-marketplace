@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { PhoneVerification } from "./PhoneVerification";
+import { supabase } from '../lib/supabase';
 import { 
   ArrowLeft, 
   CheckCircle, 
@@ -29,11 +30,33 @@ interface User {
   verified?: boolean;
   businessName?: string;
   businessDescription?: string;
+  businessLicenseNumber?: string;
   verificationStatus?: 'pending' | 'under_review' | 'verified' | 'rejected';
   verificationDocuments?: {
-    idCard?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
-    businessLicense?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
-    addressProof?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
+    idCard?: {
+      status?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
+      name?: string;
+      size?: number;
+      type?: string;
+      uploadedAt?: string;
+      data?: string;
+    };
+    businessLicense?: {
+      status?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
+      name?: string;
+      size?: number;
+      type?: string;
+      uploadedAt?: string;
+      data?: string;
+    };
+    farmCertification?: {
+      status?: 'pending' | 'uploaded' | 'under_review' | 'verified' | 'rejected';
+      name?: string;
+      size?: number;
+      type?: string;
+      uploadedAt?: string;
+      data?: string;
+    };
   };
   agriLinkVerificationRequested?: boolean;
   agriLinkVerificationRequestedAt?: string;
@@ -53,76 +76,66 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   const [uploadedDocuments, setUploadedDocuments] = useState<{[key: string]: { file: File | null, url: string, name: string, verified: boolean, status?: string }}>(() => {
     const documents: any = {};
     
-    console.log('🔄 Initializing verification component for user:', currentUser.email);
-    console.log('📋 User verification documents:', (currentUser as any).verificationDocuments);
     
     // Restore from user's verification documents if they exist
     if ((currentUser as any).verificationDocuments) {
       const userDocs = (currentUser as any).verificationDocuments;
       
-      // Restore ID Card - any status except 'pending' means it was uploaded
-      if (userDocs.idCard && userDocs.idCard !== 'pending') {
-        console.log('📄 Restoring ID Card document with status:', userDocs.idCard);
+      // Restore ID Card - check if it's an object with status
+      if (userDocs.idCard && typeof userDocs.idCard === 'object' && userDocs.idCard.status && userDocs.idCard.status !== 'pending') {
         documents.idCard = {
           file: null,
           url: '', // We can't restore the file URL, but we know it was uploaded
-          name: 'ID Card Document',
-          verified: userDocs.idCard === 'verified',
-          status: userDocs.idCard
+          name: userDocs.idCard.name || 'ID Card Document',
+          verified: userDocs.idCard.status === 'verified',
+          status: userDocs.idCard.status
         };
       }
       
-      // Restore Business License - any status except 'pending' means it was uploaded  
-      if (userDocs.businessLicense && userDocs.businessLicense !== 'pending') {
-        console.log('📄 Restoring Business License document with status:', userDocs.businessLicense);
+      // Restore Business License - check if it's an object with status
+      if (userDocs.businessLicense && typeof userDocs.businessLicense === 'object' && userDocs.businessLicense.status && userDocs.businessLicense.status !== 'pending') {
         documents.businessLicense = {
           file: null,
           url: '',
-          name: 'Business License Document',
-          verified: userDocs.businessLicense === 'verified',
-          status: userDocs.businessLicense
+          name: userDocs.businessLicense.name || 'Business License Document',
+          verified: userDocs.businessLicense.status === 'verified',
+          status: userDocs.businessLicense.status
         };
       }
     }
-    
-    console.log('✅ Restored documents:', Object.keys(documents));
     return documents;
   });
   
+
   // Sync uploadedDocuments state when currentUser.verificationDocuments changes
   useEffect(() => {
     const userDocs = (currentUser as any).verificationDocuments;
     if (userDocs) {
-      console.log('🔄 Syncing uploaded documents with user verification documents:', userDocs);
-      
       setUploadedDocuments(prev => {
         const updated = { ...prev };
         
         // Sync ID Card status
-        if (userDocs.idCard && userDocs.idCard !== 'pending' && !prev.idCard) {
-          console.log('📄 Syncing ID Card document with status:', userDocs.idCard);
+        if (userDocs.idCard && typeof userDocs.idCard === 'object' && userDocs.idCard.status && userDocs.idCard.status !== 'pending' && !prev.idCard) {
           updated.idCard = {
             file: null,
             url: '',
-            name: 'ID Card Document',
-            verified: userDocs.idCard === 'verified',
-            status: userDocs.idCard
+            name: userDocs.idCard.name || 'ID Card Document',
+            verified: userDocs.idCard.status === 'verified',
+            status: userDocs.idCard.status
           };
         }
         
         // Sync Business License status  
-        if (userDocs.businessLicense && userDocs.businessLicense !== 'pending' && !prev.businessLicense) {
-          console.log('📄 Syncing Business License document with status:', userDocs.businessLicense);
+        if (userDocs.businessLicense && typeof userDocs.businessLicense === 'object' && userDocs.businessLicense.status && userDocs.businessLicense.status !== 'pending' && !prev.businessLicense) {
           updated.businessLicense = {
             file: null,
             url: '',
-            name: 'Business License Document',
-            verified: userDocs.businessLicense === 'verified',
-            status: userDocs.businessLicense
+            name: userDocs.businessLicense.name || 'Business License Document',
+            verified: userDocs.businessLicense.status === 'verified',
+            status: userDocs.businessLicense.status
           };
         }
         
-        console.log('✅ Synced documents state:', Object.keys(updated));
         return updated;
       });
     }
@@ -133,8 +146,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
   const [businessForm, setBusinessForm] = useState({
     businessName: currentUser.businessName || '',
     businessDescription: currentUser.businessDescription || '',
-    // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
-    businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
+    businessLicenseNumber: currentUser.businessLicenseNumber || ''
   });
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
   
@@ -143,10 +155,9 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     setBusinessForm({
       businessName: currentUser.businessName || '',
       businessDescription: currentUser.businessDescription || '',
-      // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
-      businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
+      businessLicenseNumber: currentUser.businessLicenseNumber || ''
     });
-  }, [currentUser.businessName, currentUser.businessDescription]);
+  }, [currentUser.businessName, currentUser.businessDescription, currentUser.businessLicenseNumber]);
   
   // Initialize AgriLink verification state from user data
   const [agriLinkVerificationRequested, setAgriLinkVerificationRequested] = useState(() => {
@@ -235,7 +246,8 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     
     // 3. Business details (only for business accounts)
     if (isBusinessAccount) {
-      const hasBusinessInfo = currentUser.businessName && currentUser.businessDescription;
+      // Business details are complete if business name is filled (business description is optional)
+      const hasBusinessInfo = currentUser.businessName && currentUser.businessName.trim() !== '';
       const hasBusinessLicense = (currentUser as any).verificationDocuments?.businessLicense && 
                                 (currentUser as any).verificationDocuments.businessLicense !== 'pending';
       if (hasBusinessInfo && hasBusinessLicense) completed++;
@@ -285,8 +297,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       // Simulate upload process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // IMPORTANT: Update user's verification documents immediately
-      // This ensures the status is reflected in the overview right away
+      // Update user's verification documents
       const updatedDocuments = {
         ...(currentUser.verificationDocuments || {}),
         [documentType]: {
@@ -295,7 +306,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
           size: file.size,
           type: file.type,
           uploadedAt: new Date().toISOString(),
-          // Store the file as base64 for now (in production, you'd upload to a file storage service)
+          // Store the file as base64 for admin download
           data: await new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
@@ -304,15 +315,11 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         }
       };
       
-      console.log(`📝 Updating user profile with new verification documents:`, updatedDocuments);
-      
+      // Update user profile
       await onUpdate({
         ...currentUser,
         verificationDocuments: updatedDocuments
       });
-      
-      console.log(`✅ Document ${documentType} uploaded and user profile updated`);
-      console.log('📋 Current user verification documents after update:', (currentUser as any).verificationDocuments);
       
       // Small delay to ensure state propagation
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -335,6 +342,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
 
   const handleRequestAgriLinkVerification = async () => {
     setIsSubmitting(true);
+    
+    // Add timeout to prevent infinite processing
+    const timeoutId = setTimeout(() => {
+      console.error('❌ Verification request timeout - stopping processing');
+      setIsSubmitting(false);
+    }, 10000); // 10 second timeout
+    
     try {
       console.log('🛡️ Requesting AgriLink verification for user:', currentUser.email);
       
@@ -343,6 +357,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       const hasIdCard = userDocs.idCard && userDocs.idCard.status === 'uploaded';
       const hasBusinessLicense = !isBusinessAccount || (userDocs.businessLicense && userDocs.businessLicense.status === 'uploaded');
       const hasUploadedDocs = hasIdCard && hasBusinessLicense;
+      
+      console.log('🔍 Debug - Document check results:');
+      console.log('  - hasIdCard:', hasIdCard);
+      console.log('  - hasBusinessLicense:', hasBusinessLicense);
+      console.log('  - hasUploadedDocs:', hasUploadedDocs);
+      console.log('  - userDocs:', userDocs);
+      console.log('  - isBusinessAccount:', isBusinessAccount);
       
       if (hasUploadedDocs) {
         // Create verification request for admin review
@@ -371,17 +392,62 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
           businessInfo: isBusinessAccount ? {
             businessName: currentUser.businessName,
             businessDescription: currentUser.businessDescription,
-            // businessType: (currentUser as any).businessType, // Removed as it's not in User interface
-            businessLicenseNumber: (currentUser as any).businessLicenseNumber,
+            businessLicenseNumber: currentUser.businessLicenseNumber,
             location: currentUser.location
           } : undefined,
           phoneVerified: currentUser.phoneVerified
         };
 
-        // Store verification request in localStorage for admin review
-        const existingRequests = JSON.parse(localStorage.getItem('agriconnect-verification-requests') || '[]');
-        existingRequests.push(verificationRequest);
-        localStorage.setItem('agriconnect-verification-requests', JSON.stringify(existingRequests));
+        // Store verification request in Supabase database for admin review
+        console.log('🔄 Inserting verification request into database...');
+        console.log('📋 Request data:', {
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          user_name: currentUser.name,
+          user_type: currentUser.userType,
+          account_type: currentUser.accountType,
+          request_type: 'standard',
+          status: 'under_review',
+          submitted_at: new Date().toISOString(),
+          verification_documents: userDocs,
+          business_info: isBusinessAccount ? {
+            business_name: currentUser.businessName,
+            business_description: currentUser.businessDescription,
+            business_license_number: currentUser.businessLicenseNumber,
+            location: currentUser.location
+          } : null,
+          phone_verified: currentUser.phoneVerified
+        });
+        
+        const { data: insertData, error: requestError } = await supabase
+          .from('verification_requests')
+          .insert([{
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            user_name: currentUser.name,
+            user_type: currentUser.userType,
+            account_type: currentUser.accountType,
+            request_type: 'standard',
+            status: 'under_review',
+            submitted_at: new Date().toISOString(),
+            verification_documents: userDocs,
+            business_info: isBusinessAccount ? {
+              business_name: currentUser.businessName,
+              business_description: currentUser.businessDescription,
+              business_license_number: currentUser.businessLicenseNumber,
+              location: currentUser.location
+            } : null,
+            phone_verified: currentUser.phoneVerified
+          }])
+          .select();
+
+        if (requestError) {
+          console.error('❌ Error storing verification request:', requestError);
+          console.error('❌ Full error details:', requestError);
+          throw new Error('Failed to submit verification request');
+        }
+        
+        console.log('✅ Verification request inserted successfully:', insertData);
 
         // Simulate request processing
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -391,14 +457,25 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         setShowSuccessMessage(true);
         
         // Update user profile to track the request
-        await onUpdate({
+        console.log('🔄 Updating user profile with verification request data...');
+        const userUpdateData = {
           ...currentUser,
           agriLinkVerificationRequested: true,
           agriLinkVerificationRequestedAt: new Date().toISOString(),
           verificationStatus: 'under_review',
           verificationSubmittedAt: new Date().toISOString(),
           verificationDocuments: userDocs
-        });
+        };
+        
+        console.log('📋 User update data:', userUpdateData);
+        
+        try {
+          await onUpdate(userUpdateData);
+          console.log('✅ User profile updated successfully');
+        } catch (updateError) {
+          console.error('❌ Error updating user profile:', updateError);
+          // Don't throw here, as the verification request was already submitted
+        }
 
         console.log('✅ AgriLink verification request submitted successfully:', verificationRequest);
         
@@ -411,6 +488,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       console.error('❌ Failed to request AgriLink verification:', error);
       alert('Failed to request verification. Please try again.');
     } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };
@@ -431,7 +509,6 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       console.log('💼 Saving business information:', {
         businessName: businessForm.businessName,
         businessDescription: businessForm.businessDescription,
-        // businessType: businessForm.businessType, // Removed as it's not in User interface
         businessLicenseNumber: businessForm.businessLicenseNumber
       });
       
@@ -439,7 +516,6 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         ...currentUser,
         businessName: businessForm.businessName,
         businessDescription: businessForm.businessDescription,
-        // businessType: businessForm.businessType, // Removed as it's not in User interface
         businessLicenseNumber: businessForm.businessLicenseNumber
       });
       
@@ -783,7 +859,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                           ? 'bg-muted text-muted-foreground border-muted cursor-not-allowed'
                           : 'border-muted bg-background text-foreground'
                       }`}
-                      disabled={currentUser.businessName && !isEditingBusiness}
+                      disabled={Boolean(currentUser.businessName) && !isEditingBusiness}
                     />
                     {currentUser.businessName && !isEditingBusiness && (
                       <Button
@@ -808,13 +884,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                       onChange={(e) => setBusinessForm(prev => ({ ...prev, businessLicenseNumber: e.target.value }))}
                       placeholder="Enter your business license number"
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${
-                        (currentUser as any).businessLicenseNumber && !isEditingBusiness
+                        currentUser.businessLicenseNumber && !isEditingBusiness
                           ? 'bg-muted text-muted-foreground border-muted cursor-not-allowed'
                           : 'border-muted bg-background text-foreground'
                       }`}
-                      disabled={(currentUser as any).businessLicenseNumber && !isEditingBusiness}
+                      disabled={Boolean(currentUser.businessLicenseNumber) && !isEditingBusiness}
                     />
-                    {(currentUser as any).businessLicenseNumber && !isEditingBusiness && (
+                    {currentUser.businessLicenseNumber && !isEditingBusiness && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -840,7 +916,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                         ? 'bg-muted text-muted-foreground border-muted cursor-not-allowed'
                         : 'border-muted bg-background text-foreground'
                     }`}
-                    disabled={currentUser.businessName && !isEditingBusiness}
+                    disabled={Boolean(currentUser.businessName) && !isEditingBusiness}
                   />
                 </div>
 
@@ -873,8 +949,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                             setBusinessForm({
                               businessName: currentUser.businessName || '',
                               businessDescription: currentUser.businessDescription || '',
-                              // businessType: (currentUser as any).businessType || '', // Removed as it's not in User interface
-                              businessLicenseNumber: (currentUser as any).businessLicenseNumber || ''
+                              businessLicenseNumber: currentUser.businessLicenseNumber || ''
                             });
                           }}
                           className="px-4"
@@ -986,6 +1061,86 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">AgriLink Verification</h1>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              console.log('🔄 Manual refresh triggered');
+              try {
+                const { data: profile, error } = await supabase
+                  .from('users')
+                  .select(`
+                    id,
+                    email,
+                    name,
+                    user_type,
+                    account_type,
+                    location,
+                    region,
+                    verified,
+                    phone_verified,
+                    phone,
+                    business_name,
+                    business_description,
+                    business_license_number,
+                    created_at,
+                    total_reviews,
+                    verification_status,
+                    verification_documents,
+                    verification_submitted,
+                    phone_verified_at,
+                    verified_at,
+                    agri_link_verification_requested_at,
+                    business_details_completed
+                  `)
+                  .eq('id', currentUser.id)
+                  .single();
+
+                if (error) {
+                  console.error('❌ Error refreshing user data:', error);
+                  return;
+                }
+
+                if (profile) {
+                  const updatedUser: User = {
+                    id: profile.id,
+                    email: profile.email,
+                    name: profile.name,
+                    userType: profile.user_type,
+                    accountType: profile.account_type,
+                    location: profile.location,
+                    region: profile.region || undefined,
+                    verified: profile.verified,
+                    phoneVerified: profile.phone_verified,
+                    phone: profile.phone,
+                    businessName: profile.business_name,
+                    businessDescription: profile.business_description,
+                    businessLicenseNumber: profile.business_license_number,
+                    experience: 'Unknown',
+                    joinedDate: profile.created_at,
+                    totalReviews: profile.total_reviews || 0,
+                    verificationStatus: profile.verification_status || 'not_started',
+                    verificationDocuments: profile.verification_documents || {},
+                    phoneVerifiedAt: profile.phone_verified_at,
+                    verifiedAt: profile.verified_at,
+                    agriLinkVerificationRequested: profile.verification_submitted || false,
+                    agriLinkVerificationRequestedAt: profile.agri_link_verification_requested_at
+                  };
+
+                  console.log('✅ User data refreshed:', updatedUser.email);
+                  console.log('📋 Updated verification status:', updatedUser.verificationStatus);
+                  console.log('📋 Updated verified status:', updatedUser.verified);
+                  
+                  // Update the user data
+                  await onUpdate(updatedUser);
+                }
+              } catch (error) {
+                console.error('❌ Error refreshing user data:', error);
+              }
+            }}
+          >
+            🔄 Refresh
+          </Button>
         </div>
         <p className="text-sm text-muted-foreground">
           Complete your verification in {isBusinessAccount ? '4' : '3'} steps to build trust and credibility
@@ -1150,11 +1305,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         {/* Business Details - Only show for business accounts */}
         {isBusinessAccount && (() => {
           // Check business completion status more comprehensively
-          const hasBusinessInfo = currentUser.businessName && currentUser.businessDescription;
-          const hasBusinessLicense = uploadedDocuments.businessLicense || 
-                                   (currentUser.verificationDocuments?.businessLicense && 
-                                    currentUser.verificationDocuments.businessLicense !== 'pending');
-          const isBusinessComplete = hasBusinessInfo && hasBusinessLicense;
+          const hasBusinessInfo = Boolean(currentUser.businessName); // businessDescription is optional
+          const hasBusinessLicense = Boolean(uploadedDocuments.businessLicense) || 
+                                   (Boolean(currentUser.verificationDocuments?.businessLicense) && 
+                                    currentUser.verificationDocuments?.businessLicense?.status !== 'pending');
+          
+          // If user is verified, business details should be considered complete
+          const isBusinessComplete = currentUser.verified || (hasBusinessInfo && hasBusinessLicense);
           
           return (
             <Card className={isBusinessComplete ? "bg-primary/5 border-primary/20" : "bg-primary/5 border-primary/20"}>
@@ -1281,10 +1438,13 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
                   {/* Always show the Request Verification button for better UX visibility */}
                   {(() => {
                     // Check business completion properly
-                    const hasBusinessInfo = !isBusinessAccount || (currentUser.businessName && currentUser.businessDescription);
-                    const hasBusinessLicense = !isBusinessAccount || uploadedDocuments.businessLicense || 
-                                             (currentUser.verificationDocuments?.businessLicense && 
-                                              currentUser.verificationDocuments.businessLicense !== 'pending');
+                    const hasBusinessInfo = !isBusinessAccount || Boolean(currentUser.businessName); // businessDescription is optional
+                    const hasBusinessLicense = !isBusinessAccount || Boolean(uploadedDocuments.businessLicense) || 
+                                             (Boolean(currentUser.verificationDocuments?.businessLicense) && 
+                                              currentUser.verificationDocuments?.businessLicense?.status !== 'pending');
+                    
+                    // If user is verified, business details should be considered complete
+                    const isBusinessComplete = currentUser.verified || (!isBusinessAccount || (hasBusinessInfo && hasBusinessLicense));
                     
                     const canRequest = currentUser.phoneVerified && 
                                       uploadedDocuments.idCard && 
