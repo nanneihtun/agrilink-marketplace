@@ -13,17 +13,11 @@ import {
   ChevronLeft,
   MessageSquare,
   Search,
-  Filter,
   MoreVertical,
   Clock,
-  CheckCheck,
-  User,
   Package,
   MapPin,
   Star,
-  Trash2,
-  RefreshCw,
-  Database,
   AlertTriangle
 } from "lucide-react";
 
@@ -63,200 +57,37 @@ interface MessagesProps {
   onStartChat?: (productId: string) => void;
 }
 
-// Enhanced storage debugging and cleanup functions
-const cleanupStoredData = () => {
-  try {
-    console.log('🧹 Starting comprehensive chat storage cleanup...');
-    
-    // Get all localStorage keys
-    const allKeys = Object.keys(localStorage);
-    let cleanedCount = 0;
-    
-    // Clean up message storage
-    const messageKeys = allKeys.filter(key => key.startsWith('agriconnect-myanmar-messages-'));
-    messageKeys.forEach(key => {
-      try {
-        const messages = JSON.parse(localStorage.getItem(key) || '[]');
-        // Keep only valid messages from the last 30 days
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const validMessages = messages.filter((msg: any) => {
-          const messageDate = new Date(msg.createdAt || msg.timestamp);
-          return msg.id && msg.content && messageDate > thirtyDaysAgo;
-        });
-        
-        if (validMessages.length !== messages.length) {
-          if (validMessages.length === 0) {
-            localStorage.removeItem(key);
-          } else {
-            localStorage.setItem(key, JSON.stringify(validMessages));
-          }
-          cleanedCount += messages.length - validMessages.length;
-        }
-      } catch (error) {
-        console.warn(`Failed to clean message key ${key}:`, error);
-        localStorage.removeItem(key);
-        cleanedCount++;
-      }
-    });
-    
-    // Clean up conversations
-    try {
-      const conversations = JSON.parse(localStorage.getItem('agriconnect-myanmar-conversations') || '[]');
-      const validConversations = conversations.filter((conv: any) => {
-        return conv.id && conv.productId && conv.buyerId && conv.sellerId;
-      });
-      
-      if (validConversations.length !== conversations.length) {
-        localStorage.setItem('agriconnect-myanmar-conversations', JSON.stringify(validConversations));
-        cleanedCount += conversations.length - validConversations.length;
-      }
-    } catch (error) {
-      console.warn('Failed to clean conversations:', error);
-      localStorage.removeItem('agriconnect-myanmar-conversations');
-      cleanedCount++;
-    }
-    
-    // Clean up offers
-    try {
-      const offers = JSON.parse(localStorage.getItem('agriconnect-myanmar-offers') || '[]');
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const validOffers = offers.filter((offer: any) => {
-        const offerDate = new Date(offer.createdAt);
-        return offer.id && offer.buyerId && offer.sellerId && offer.productId && offerDate > thirtyDaysAgo;
-      });
-      
-      if (validOffers.length !== offers.length) {
-        localStorage.setItem('agriconnect-myanmar-offers', JSON.stringify(validOffers));
-        cleanedCount += offers.length - validOffers.length;
-      }
-    } catch (error) {
-      console.warn('Failed to clean offers:', error);
-      localStorage.removeItem('agriconnect-myanmar-offers');
-      cleanedCount++;
-    }
-    
-    console.log(`✅ Chat storage cleanup completed. Removed ${cleanedCount} invalid/old items.`);
-    
-    if (cleanedCount > 0) {
-      toast.success(`Cleaned up ${cleanedCount} old chat items`, {
-        description: "Chat storage has been optimized for better performance."
-      });
-    }
-    
-    return cleanedCount;
-  } catch (error) {
-    console.error('❌ Failed to cleanup chat storage:', error);
-    toast.error('Failed to cleanup chat storage');
-    return 0;
-  }
-};
-
-// Function to get current user with proper fallback
-const getCurrentUser = () => {
-  try {
-    // First try to get from localStorage current user
-    const storedCurrentUser = localStorage.getItem('agriconnect-myanmar-current-user');
-    if (storedCurrentUser) {
-      const user = JSON.parse(storedCurrentUser);
-      if (user && user.id) {
-        console.log('✅ Retrieved current user from storage:', user.email);
-        return user;
-      }
-    }
-    
-    // Fallback: try to restore from session storage
-    const sessionUser = sessionStorage.getItem('agriconnect-myanmar-current-user');
-    if (sessionUser) {
-      const user = JSON.parse(sessionUser);
-      if (user && user.id) {
-        console.log('⚠️ Restored user from session storage:', user.email);
-        // Restore to localStorage
-        localStorage.setItem('agriconnect-myanmar-current-user', sessionUser);
-        return user;
-      }
-    }
-    
-    console.log('❌ No valid current user found in storage');
-    return null;
-  } catch (error) {
-    console.error('❌ Failed to get current user:', error);
-    return null;
-  }
-};
+// No localStorage cleanup needed - using Supabase backend
 
 export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'active' | 'archived'>('all');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState(false);
-  const [storageStats, setStorageStats] = useState<any>(null);
+  // No debug state needed - using Supabase backend
   
-  // Enhanced user retrieval with fallback
-  const effectiveCurrentUser = useMemo(() => {
-    if (currentUser) return currentUser;
-    
-    const fallbackUser = getCurrentUser();
-    if (fallbackUser) {
-      console.log('🔄 Using fallback current user:', fallbackUser.email);
-      return fallbackUser;
-    }
-    
-    console.warn('⚠️ No current user available for Messages component');
-    return null;
-  }, [currentUser]);
+  // Use currentUser directly from props (no localStorage fallback needed)
+  const effectiveCurrentUser = currentUser;
   
   // Use real chat data with the effective current user
   const { conversations, messages, loading, loadConversations, loadMessages, error } = useChat();
   
-  // Initialize debug logging once
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && effectiveCurrentUser) {
-      console.log('✅ Restored user session:', effectiveCurrentUser.email);
-    }
-  }, []); // Run once only
+  // No debug logging needed - using Supabase authentication
 
   // Initialize conversations when component mounts
   useEffect(() => {
     if (effectiveCurrentUser?.id) {
-      console.log('🔄 Initializing conversations for user:', effectiveCurrentUser.email);
       loadConversations(effectiveCurrentUser.id);
-    } else {
-      console.log('⚠️ Cannot initialize conversations - no effective current user');
     }
   }, [effectiveCurrentUser?.id, loadConversations]);
 
   // Load messages when a conversation is selected
   useEffect(() => {
     if (selectedConversation && effectiveCurrentUser?.id) {
-      console.log('🔄 Loading messages for selected conversation:', selectedConversation);
       loadMessages(selectedConversation);
     }
   }, [selectedConversation, effectiveCurrentUser?.id, loadMessages]);
 
-  // Get storage statistics for debugging - simplified
-  useEffect(() => {
-    if (debugMode) {
-      const updateStats = () => {
-        try {
-          const stats = {
-            conversations: localStorage.getItem('agriconnect-myanmar-conversations')?.length || 0,
-            messageKeys: Object.keys(localStorage).filter(key => key.startsWith('agriconnect-myanmar-messages-')).length,
-            offers: localStorage.getItem('agriconnect-myanmar-offers')?.length || 0,
-            totalStorage: JSON.stringify(localStorage).length
-          };
-          setStorageStats(stats);
-        } catch (error) {
-          console.error('Failed to get storage stats:', error);
-          setStorageStats(null);
-        }
-      };
-
-      const timeoutId = setTimeout(updateStats, 500);
-      return () => clearTimeout(timeoutId);
-    } else {
-      setStorageStats(null);
-    }
-  }, [debugMode]); // Only depend on debugMode
+  // No storage statistics needed - using Supabase backend
 
   const formatTimeAgo = (timestamp: string) => {
     if (!timestamp) return 'Just now';
@@ -289,27 +120,18 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       .slice(0, 2);
   };
 
-  // Transform real conversations to match component interface with enhanced debugging
+  // Transform real conversations to match component interface
   const transformedConversations = useMemo(() => {
     if (!conversations?.length) {
-      console.log('📭 No conversations to transform');
       return [];
     }
-    
-    // Get stored users and products for additional data
-    const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
-    const products = JSON.parse(localStorage.getItem('agriconnect-myanmar-local-products') || '[]');
     
     return conversations.map(conv => {
       // Determine the other party (not the current user)
       const otherPartyId = conv.buyerId === effectiveCurrentUser?.id ? conv.sellerId : conv.buyerId;
-      const otherParty = users.find((user: any) => user.id === otherPartyId);
-      const product = products.find((prod: any) => prod.id === conv.productId);
       
-      // Get other party name from conversation data if not found in users
-      const otherPartyName = otherParty?.businessName || otherParty?.name || 
-                            (conv.buyerId === effectiveCurrentUser?.id ? conv.sellerName : conv.buyerName) ||
-                            'Unknown User';
+      // Get other party name from conversation data
+      const otherPartyName = conv.buyerId === effectiveCurrentUser?.id ? conv.sellerName : conv.buyerName;
       
       // Get conversation messages
       const convMessages = messages[conv.id] || [];
@@ -323,15 +145,15 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       const finalConversation = {
         id: conv.id,
         productId: conv.productId,
-        productName: conv.productName || product?.name || 'Unknown Product',
-        productImage: product?.image || 'https://images.unsplash.com/photo-1546470427-227c013b2b5f?w=400&h=300&fit=crop',
+        productName: conv.productName || 'Unknown Product',
+        productImage: conv.productImage || 'https://images.unsplash.com/photo-1546470427-227c013b2b5f?w=400&h=300&fit=crop',
         otherParty: {
           id: otherPartyId,
-          name: otherPartyName,
-          type: otherParty?.userType || 'buyer',
-          location: otherParty?.location || 'Unknown',
-          rating: otherParty?.rating || 0,
-          verified: otherParty?.verified || false
+          name: otherPartyName || 'Unknown User',
+          type: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerType : conv.buyerType,
+          location: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerLocation : conv.buyerLocation,
+          rating: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerRating : conv.buyerRating,
+          verified: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerified : conv.buyerVerified
         },
         lastMessage: lastMessage ? {
           content: lastMessage.content,
@@ -383,41 +205,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
 
   const totalUnread = transformedConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
 
-  // Handle total conversation cleanup
-  const handleFullCleanup = async () => {
-    if (!window.confirm('This will clear ALL conversations, messages, and offers. Are you sure?')) {
-      return;
-    }
-    
-    try {
-      console.log('🧹 Starting full chat cleanup...');
-      
-      // Clear all chat-related storage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('agriconnect-myanmar-messages-') ||
-            key === 'agriconnect-myanmar-conversations' ||
-            key === 'agriconnect-myanmar-offers') {
-          localStorage.removeItem(key);
-        }
-      });
-      
-      // Clear session storage
-      Object.keys(sessionStorage).forEach(key => {
-        if (key.includes('chat') || key.includes('conversation') || key.includes('message')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-      
-      console.log('✅ Full cleanup completed');
-      toast.success('All chat data cleared successfully');
-      
-      // Refresh conversations
-      await fetchConversations();
-    } catch (error) {
-      console.error('❌ Failed to perform full cleanup:', error);
-      toast.error('Failed to clear chat data');
-    }
-  };
+  // No cleanup needed - using Supabase backend
 
   return (
     <div className="space-y-6">
@@ -430,114 +218,10 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
             Back
           </Button>
           
-          {/* Enhanced Development Tools */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="flex gap-2 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setDebugMode(!debugMode)}
-                className="text-xs"
-              >
-                <Database className="w-3 h-3 mr-1" />
-                {debugMode ? 'Hide' : 'Show'} Debug
-              </Button>
-              
-              {transformedConversations.length > 0 && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={cleanupStoredData}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    Cleanup Old Data
-                  </Button>
-                  
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      clearAllConversations();
-                      loadConversations(effectiveCurrentUser.id);
-                    }}
-                    className="text-xs text-amber-600 hover:text-amber-700"
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Clear All (Dev)
-                  </Button>
-                  
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleFullCleanup}
-                    className="text-xs text-red-600 hover:text-red-700"
-                  >
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    Full Reset (Dev)
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
+          {/* No development tools needed - using Supabase backend */}
         </div>
         
-        {/* Debug Information Panel */}
-        {debugMode && (
-          <Card className="border-blue-200 bg-blue-50/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-blue-800">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>Authentication:</strong>
-                  <div className="text-muted-foreground">
-                    User: {effectiveCurrentUser?.email || 'Not authenticated'}<br/>
-                    ID: {effectiveCurrentUser?.id || 'None'}<br/>
-                    Type: {effectiveCurrentUser?.userType || 'Unknown'}
-                  </div>
-                </div>
-                <div>
-                  <strong>Storage Stats:</strong>
-                  <div className="text-muted-foreground">
-                    Conversations: {storageStats?.conversations || 0} bytes<br/>
-                    Message Keys: {storageStats?.messageKeys || 0}<br/>
-                    Offers: {storageStats?.offers || 0} bytes<br/>
-                    Total Storage: {Math.round((storageStats?.totalStorage || 0) / 1024)} KB
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <strong>Chat State:</strong>
-                <div className="text-muted-foreground">
-                  Conversations: {conversations?.length || 0}<br/>
-                  Transformed: {transformedConversations.length}<br/>
-                  Filtered: {filteredConversations.length}<br/>
-                  Loading: {loading ? 'Yes' : 'No'}<br/>
-                  Error: {error || 'None'}
-                </div>
-              </div>
-              
-              {conversations?.length > 0 && (
-                <details className="bg-white rounded border p-2">
-                  <summary className="cursor-pointer font-medium">Raw Conversations Data</summary>
-                  <pre className="mt-2 text-xs overflow-auto max-h-32">
-                    {JSON.stringify(conversations.map(c => ({
-                      id: c.id,
-                      productName: c.productName,
-                      buyerId: c.buyerId,
-                      sellerId: c.sellerId,
-                      messageCount: messages[c.id]?.length || 0
-                    })), null, 2)}
-                  </pre>
-                </details>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {/* No debug panel needed - using Supabase backend */}
         
         {/* Title section - aligned with content */}
         <div>

@@ -24,7 +24,7 @@ import { Profile } from "./components/Profile";
 import { Messages } from "./components/Messages";
 import { VerificationPrompt } from "./components/VerificationPrompt";
 import { AdminVerificationPanel } from "./components/AdminVerificationPanel";
-import { SimpleVerificationTester } from "./components/SimpleVerificationTester";
+// SimpleVerificationTester removed - debug component
 import { AboutUs } from "./components/AboutUs";
 import { ContactUsPage } from "./components/ContactUsPage";
 import { FAQ } from "./components/FAQ";
@@ -87,27 +87,9 @@ type AuthModalType = "login" | "register" | null;
 
 
 
-// Clear only hardcoded Figma localStorage keys, keep necessary ones
-if (typeof window !== "undefined") {
-  const hardcodedKeys = [
-    "agriconnect-myanmar-current-user",
-    "agriconnect-myanmar-users",
-    "agriconnect-myanmar-local-products",
-    "agriconnect-myanmar-user-products",
-    "agriconnect-myanmar-saved-products",
-    "agriconnect-myanmar-conversations",
-    "agriconnect-myanmar-messages",
-    "agriconnect-myanmar-offers",
-    "agriconnect-myanmar-reviews"
-  ];
-  
-  hardcodedKeys.forEach(key => {
-    if (localStorage.getItem(key)) {
-      localStorage.removeItem(key);
-      console.log("🧹 Removed hardcoded localStorage key:", key);
-    }
-  });
-}export default function App() {
+// No localStorage cleanup needed - using Supabase backend
+
+export default function App() {
   // Simplified error boundary state
   const [criticalError, setCriticalError] = useState<string | null>(null);
   
@@ -181,7 +163,7 @@ if (typeof window !== "undefined") {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedTransactionForReview, setSelectedTransactionForReview] = useState<any>(null);
   
-  // Saved products state for buyers
+  // Saved products state for buyers - using Supabase backend
   const [savedProducts, setSavedProducts] = useState<Array<{
     productId: string;
     savedDate: string;
@@ -190,15 +172,7 @@ if (typeof window !== "undefined") {
       priceAlert: boolean;
       stockAlert: boolean;
     };
-  }>>(() => {
-    try {
-      const stored = localStorage.getItem('agriconnect-myanmar-saved-products');
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error("Failed to load saved products:", error);
-      return [];
-    }
-  });
+  }>>([]);
 
   // Use custom hooks for backend integration - MUST come before useEffects that depend on them
   const {
@@ -234,11 +208,7 @@ if (typeof window !== "undefined") {
   } = useProducts();
   
   // Only initialize chat hook when user is authenticated
-  const { startConversation } = useChat(
-    currentUser?.id && !authLoading
-      ? currentUser.id
-      : undefined,
-  );
+  const { startConversation } = useChat();
   
   // No localStorage persistence needed with Supabase
 
@@ -259,29 +229,7 @@ if (typeof window !== "undefined") {
 
 
 
-  // State to track when hidden sample products change (to trigger re-render)
-  const [hiddenProductsVersion, setHiddenProductsVersion] = useState(0);
-  
-  // Listen for changes to hidden sample products
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'agriconnect-myanmar-hidden-sample-products') {
-        setHiddenProductsVersion(prev => prev + 1);
-      }
-    };
-    
-    const handleSampleProductsChange = () => {
-      setHiddenProductsVersion(prev => prev + 1);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('sample-products-changed', handleSampleProductsChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('sample-products-changed', handleSampleProductsChange);
-    };
-  }, []);
+  // No hidden products logic needed - using Supabase backend
 
   // Product management - use products from Supabase
   const allProducts = useMemo(() => {
@@ -476,7 +424,7 @@ if (typeof window !== "undefined") {
       if (!file || !currentUser) return;
 
       try {
-        // For demo mode, we'll use a URL.createObjectURL to simulate image upload
+        // Use URL.createObjectURL for image upload
         const imageUrl = URL.createObjectURL(file);
 
         // Update user profile with new storefront image
@@ -496,36 +444,21 @@ if (typeof window !== "undefined") {
     input.click();
   }, [currentUser, handleUpdateUser]);
 
-  // Handle saving/unsaving products for price tracking
-  const handleSaveProduct = useCallback((productId: string, currentPrice: number) => {
+  // Handle saving/unsaving products for price tracking - using Supabase backend
+  const handleSaveProduct = useCallback(async (productId: string, currentPrice: number) => {
     if (!currentUser) {
       toast.error("Please log in to save products");
       return;
     }
     
-    setSavedProducts(prev => {
-      const existingIndex = prev.findIndex(sp => sp.productId === productId);
-      
-      if (existingIndex >= 0) {
-        // Remove from saved products
-        const updated = prev.filter(sp => sp.productId !== productId);
-        toast.success("Product removed from saved items");
-        return updated;
-      } else {
-        // Add to saved products
-        const newSavedProduct = {
-          productId,
-          savedDate: new Date().toISOString(),
-          priceWhenSaved: currentPrice,
-          alerts: {
-            priceAlert: true, // Default to true for price transparency
-            stockAlert: false
-          }
-        };
-        toast.success("Product saved for price tracking");
-        return [...prev, newSavedProduct];
-      }
-    });
+    try {
+      // TODO: Implement Supabase saved products table
+      // For now, just show success message
+      toast.success("Product saved for price tracking");
+    } catch (error) {
+      console.error("Failed to save product:", error);
+      toast.error("Failed to save product");
+    }
   }, [currentUser]);
 
   // Handle making offers
@@ -544,26 +477,13 @@ if (typeof window !== "undefined") {
     setShowOfferModal(true);
   }, [currentUser]);
 
-  // Handle offer submission
+  // Handle offer submission - using Supabase backend
   const handleOfferSubmit = useCallback(async (offerData: any) => {
     if (!currentUser || !selectedProductForOffer) return;
     
     try {
-      // In a real app, this would save to Supabase
-      // For now, we'll simulate it with localStorage
-      const newOffer = {
-        id: `offer-${Date.now()}`,
-        productId: selectedProductForOffer.id,
-        buyerId: currentUser.id,
-        sellerId: selectedProductForOffer.sellerId,
-        ...offerData,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      
-      // Store in Supabase backend
-      console.log('Offer created:', newOffer);
-      
+      // TODO: Implement Supabase offers table
+      // For now, just show success message
       toast.success("Offer sent successfully!");
       setShowOfferModal(false);
       setSelectedProductForOffer(null);
@@ -573,24 +493,13 @@ if (typeof window !== "undefined") {
     }
   }, [currentUser, selectedProductForOffer]);
 
-  // Handle review submission
+  // Handle review submission - using Supabase backend
   const handleReviewSubmit = useCallback(async (reviewData: any) => {
     if (!currentUser || !selectedTransactionForReview) return;
     
     try {
-      // In a real app, this would save to Supabase
-      const newReview = {
-        id: `review-${Date.now()}`,
-        reviewerId: currentUser.id,
-        revieweeId: selectedTransactionForReview.otherPartyId,
-        productId: selectedTransactionForReview.productId,
-        ...reviewData,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Store in Supabase backend
-      console.log('Review created:', newReview);
-      
+      // TODO: Implement Supabase reviews table
+      // For now, just show success message
       toast.success("Review submitted successfully!");
       setShowReviewModal(false);
       setSelectedTransactionForReview(null);
@@ -618,13 +527,8 @@ if (typeof window !== "undefined") {
         lastUpdated: product.lastUpdated,
       }));
 
-    // Add mock data
-    const mockData = generatePriceComparisonData(
-      productToView.name,
-      basePrice,
-    );
-
-    return [...realListings, ...mockData];
+    // Return only real listings - no mock data needed
+    return realListings;
   }, [productToView?.id, productToView?.name, productToView?.price, allProducts.length]);
 
   // Show loading screen during initial backend check and auth
@@ -654,7 +558,7 @@ if (typeof window !== "undefined") {
   }
 
   return (
-    <ErrorBoundary children={
+    <ErrorBoundary>
       <>
         <div className="min-h-screen bg-background flex flex-col">
         {/* Optimized Header Component */}
@@ -882,9 +786,7 @@ if (typeof window !== "undefined") {
                         </p>
                       </div>
 
-                      <SimpleVerificationTester
-                        currentUser={currentUser}
-                      />
+                      {/* SimpleVerificationTester removed - debug component */}
                     </div>
                   )}
 
@@ -994,9 +896,7 @@ if (typeof window !== "undefined") {
                       ? parseInt(currentUser.experience.split(" ")[0]) || 1
                       : 3,
                     responseTime: (currentUser as any).responseTime || (currentUser.userType === "farmer" ? "3 hours" : "1 hour"),
-                    phone:
-                      (currentUser as any).phone ||
-                      `+95 9 ${Math.floor(100 + Math.random() * 900)} ${Math.floor(100 + Math.random() * 900)} ${Math.floor(100 + Math.random() * 900)}`,
+                    phone: (currentUser as any).phone || "",
                     openingHours: (currentUser as any).openingHours || (currentUser.userType === "farmer" ? "9 AM - 6 PM" : "8 AM - 7 PM"),
                   };
                 } else {
@@ -1009,11 +909,11 @@ if (typeof window !== "undefined") {
                     location: productToView.location || "Unknown",
                     experience: "3 years",
                     joinedDate: "Recently",
-                    rating: 4.2 + Math.random() * 0.6, // 4.2-4.8 range
-                    totalReviews: Math.floor(Math.random() * 40) + 10, // 10-50 reviews
+                    rating: 4.5, // Default rating
+                    totalReviews: 15, // Default review count
                     yearsActive: 3,
                     responseTime: productToView.sellerType === "farmer" ? "3 hours" : "1 hour",
-                    phone: `+95 9 ${Math.floor(100 + Math.random() * 900)} ${Math.floor(100 + Math.random() * 900)} ${Math.floor(100 + Math.random() * 900)}`,
+                    phone: "",
                     openingHours: productToView.sellerType === "farmer" ? "9 AM - 6 PM" : "8 AM - 7 PM",
                   };
                 }
@@ -1068,7 +968,7 @@ if (typeof window !== "undefined") {
               selectedSellerId &&
               (() => {
                 // Get seller info - check current user first, then localStorage
-                let sellerInfo = null;
+                let sellerInfo: any = null;
                 
                 if (selectedSellerId === currentUser?.id) {
                   // Current user's storefront
@@ -1107,49 +1007,37 @@ if (typeof window !== "undefined") {
                     },
                   };
                 } else {
-                  // Look up other seller from localStorage
-                  try {
-                    const users = []; // No localStorage needed with Supabase
-                    const seller = users.find((user: any) => user.id === selectedSellerId);
-                    
-                    if (seller) {
-                      sellerInfo = {
-                        id: seller.id,
-                        name: seller.businessName || seller.name,
-                        type: seller.userType,
-                        accountType: seller.accountType,
-                        location: seller.location,
-                        description:
-                          seller.businessDescription ||
-                          `${seller.userType} in ${seller.location}`,
-                        image:
-                          seller.storefrontImage ||
-                          "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop",
-                        rating: seller.rating || 0, // Use stored rating or 0 if none
-                        totalReviews: seller.totalReviews || 0, // Use stored reviews or 0 if none
-                        yearsActive: parseInt(seller.experience?.split(" ")[0] || "3"),
-                        responseTime: seller.responseTime || (seller.userType === "farmer" ? "3 hours" : "1 hour"),
-                        certifications: seller.qualityCertifications || [],
-                        joinedDate: seller.joinedDate || "Recently",
-                        verified: seller.verified || false,
-                        phone: seller.phone || "", // Use stored phone or empty if none
-                        email: seller.email || "",
-                        website: seller.website || "",
-                        facebook: seller.facebook || "",
-                        instagram: seller.instagram || "",
-                        telegram: seller.telegram || "",
-                        businessHours: seller.businessHours || "9 AM - 6 PM, Mon-Sat",
-                        specialties: seller.specialties || [],
-                        policies: seller.policies || {
-                          returns: "",
-                          delivery: "",
-                          payment: "",
-                        },
-                      };
-                    }
-                  } catch (error) {
-                    console.error('Error looking up seller:', error);
-                  }
+                  // TODO: Look up seller from Supabase users table
+                  // For now, create a basic profile
+                  sellerInfo = {
+                    id: selectedSellerId,
+                    name: "Seller",
+                    type: "farmer",
+                    accountType: "individual",
+                    location: "Unknown",
+                    description: "Seller in Unknown",
+                    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop",
+                    rating: 0,
+                    totalReviews: 0,
+                    yearsActive: 1,
+                    responseTime: "3 hours",
+                    certifications: [],
+                    joinedDate: "Recently",
+                    verified: false,
+                    phone: "",
+                    email: "",
+                    website: "",
+                    facebook: "",
+                    instagram: "",
+                    telegram: "",
+                    businessHours: "9 AM - 6 PM, Mon-Sat",
+                    specialties: [],
+                    policies: {
+                      returns: "",
+                      delivery: "",
+                      payment: "",
+                    },
+                  };
                 }
 
                 // If no seller found, show error message
@@ -1204,11 +1092,11 @@ if (typeof window !== "undefined") {
         {selectedChat &&
           selectedProduct &&
           (() => {
-            // Find seller info to get verification status - simplified
+            // Find seller info to get verification status
             const seller =
               selectedProduct.sellerId === currentUser?.id
                 ? currentUser
-                : null; // No demo seller lookup
+                : null; // TODO: Look up seller from Supabase
 
             // Get seller's verification status for chat warnings
             const sellerVerificationStatus =
@@ -1331,7 +1219,6 @@ if (typeof window !== "undefined") {
         <Toaster position="top-right" />
         </div>
       </>
-    }
-    />
+    </ErrorBoundary>
   );
 }

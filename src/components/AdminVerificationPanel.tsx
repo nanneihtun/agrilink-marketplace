@@ -8,8 +8,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-// No StorageMonitor needed with Supabase
-import { StorageDebugPanel } from "./StorageDebugPanel";
+// No StorageDebugPanel needed with Supabase
 import { 
   CheckCircle, 
   XCircle, 
@@ -920,7 +919,9 @@ export function AdminVerificationPanel({ currentAdmin, onBack }: AdminVerificati
         </TabsContent>
 
         <TabsContent value="debug" className="space-y-4">
-          <StorageDebugPanel />
+          <div className="text-center py-8 text-muted-foreground">
+            Debug panel removed - using Supabase backend
+          </div>
         </TabsContent>
       </Tabs>
     </div>

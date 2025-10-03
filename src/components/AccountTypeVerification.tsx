@@ -407,7 +407,7 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
       if (hasUploadedDocs) {
         // Create verification request for admin review
         const verificationRequest = {
-          id: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `req-${Date.now()}`,
           userId: currentUser.id,
           userEmail: currentUser.email,
           userName: currentUser.name,

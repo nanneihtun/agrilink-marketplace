@@ -14,8 +14,8 @@ export async function unsplash_tool({ query }: { query: string }): Promise<strin
       'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop', // Spices
     ];
 
-    // Select a random image for now
-    const randomImage = agriculturalImages[Math.floor(Math.random() * agriculturalImages.length)];
+    // Select first image for consistency
+    const randomImage = agriculturalImages[0];
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));

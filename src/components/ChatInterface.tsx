@@ -358,7 +358,7 @@ export function ChatInterface({
 
     const newOffer: Offer = {
       ...offer,
-      id: `offer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `offer_${Date.now()}`,
       createdAt: new Date().toISOString()
     };
 
