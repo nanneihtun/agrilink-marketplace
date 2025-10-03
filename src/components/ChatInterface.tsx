@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -83,7 +83,7 @@ export function ChatInterface({
     }
   }, [passedCurrentUser?.id, effectiveCurrentUser?.id]);
   
-  const { messages, sendMessage, startConversation, loadMessages } = useChat(effectiveCurrentUser?.id);
+  const { messages, sendMessage, startConversation, loadMessages } = useChat();
   const [newMessage, setNewMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
   
@@ -257,7 +257,7 @@ export function ChatInterface({
           // Use existing conversation
           console.log('📱 Using existing conversation:', initialConversationId);
           setConversationId(initialConversationId);
-          await fetchMessages(initialConversationId);
+          await loadMessages(initialConversationId);
         } else {
           // Check if conversation already exists in localStorage first
           try {
@@ -265,15 +265,15 @@ export function ChatInterface({
             if (storedConversations) {
               const conversations = JSON.parse(storedConversations);
               const existingConversation = conversations.find((conv: any) => 
-                conv.buyerId === effectiveCurrentUser.id && 
-                conv.sellerId === sellerId && 
+                ((conv.buyerId === effectiveCurrentUser.id && conv.sellerId === sellerId) ||
+                 (conv.sellerId === effectiveCurrentUser.id && conv.buyerId === sellerId)) && 
                 conv.productId === productId
               );
               
               if (existingConversation) {
                 console.log('📱 Found existing conversation in localStorage:', existingConversation.id);
                 setConversationId(existingConversation.id);
-                await fetchMessages(existingConversation.id);
+                await loadMessages(existingConversation.id);
                 return;
               }
             }
@@ -283,7 +283,12 @@ export function ChatInterface({
           
           // Start new conversation
           console.log('🆕 Starting new conversation');
-          const conversation = await startConversation(effectiveCurrentUser.id, sellerId, productId);
+          // Determine if current user is buyer or seller
+          const isCurrentUserSeller = effectiveCurrentUser.id === sellerId;
+          const buyerId = isCurrentUserSeller ? sellerId : effectiveCurrentUser.id;
+          const actualSellerId = isCurrentUserSeller ? effectiveCurrentUser.id : sellerId;
+          
+          const conversation = await startConversation(buyerId, actualSellerId, productId);
           console.log('✅ New conversation created:', conversation.id);
           setConversationId(conversation.id);
         }
@@ -551,19 +556,19 @@ export function ChatInterface({
         {/* Simplified Verification Status Alert - Public View (2-Stage System) */}
         {sellerVerificationStatus && (
           <div className={`mx-4 mt-3 p-3 rounded-lg border ${
-            sellerVerificationStatus.verified 
+            sellerVerificationStatus.trustLevel !== 'unverified' 
               ? 'bg-green-50 border-green-200'
               : 'bg-yellow-50 border-yellow-200'
           }`}>
             <div className="flex items-start gap-2">
-              {!sellerVerificationStatus.verified && (
+              {!sellerVerificationStatus.trustLevel !== 'unverified' && (
                 <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5" />
               )}
-              {sellerVerificationStatus.verified && (
+              {sellerVerificationStatus.trustLevel !== 'unverified' && (
                 <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
               )}
               <div className="flex-1">
-                {!sellerVerificationStatus.verified && (
+                {!sellerVerificationStatus.trustLevel !== 'unverified' && (
                   <>
                     <p className="text-sm font-medium text-yellow-800">
                       Profile Not Confirmed
@@ -575,7 +580,7 @@ export function ChatInterface({
                   </>
                 )}
                 
-                {sellerVerificationStatus.verified && (
+                {sellerVerificationStatus.trustLevel !== 'unverified' && (
                   <>
                     <p className="text-sm font-medium text-green-800">
                       Verified {sellerType === 'farmer' ? 'Farmer' : sellerType === 'trader' ? 'Trader' : 'User'}

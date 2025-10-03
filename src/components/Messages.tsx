@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -206,7 +206,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   }, [currentUser]);
   
   // Use real chat data with the effective current user
-  const { conversations, messages, loading, loadConversations, loadMessages, error } = useChat(effectiveCurrentUser?.id);
+  const { conversations, messages, loading, loadConversations, loadMessages, error } = useChat();
   
   // Initialize debug logging once
   useEffect(() => {
@@ -306,6 +306,11 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       const otherParty = users.find((user: any) => user.id === otherPartyId);
       const product = products.find((prod: any) => prod.id === conv.productId);
       
+      // Get other party name from conversation data if not found in users
+      const otherPartyName = otherParty?.businessName || otherParty?.name || 
+                            (conv.buyerId === effectiveCurrentUser?.id ? conv.sellerName : conv.buyerName) ||
+                            'Unknown User';
+      
       // Get conversation messages
       const convMessages = messages[conv.id] || [];
       const lastMessage = convMessages[convMessages.length - 1];
@@ -322,7 +327,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
         productImage: product?.image || 'https://images.unsplash.com/photo-1546470427-227c013b2b5f?w=400&h=300&fit=crop',
         otherParty: {
           id: otherPartyId,
-          name: otherParty?.businessName || otherParty?.name || 'Unknown User',
+          name: otherPartyName,
           type: otherParty?.userType || 'buyer',
           location: otherParty?.location || 'Unknown',
           rating: otherParty?.rating || 0,
@@ -785,7 +790,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerRating={conversation.otherParty.rating}
                 productName={conversation.productName}
                 productId={conversation.productId}
-                sellerId={conversation.otherParty.id}
+                sellerId={effectiveCurrentUser?.id || conversation.otherParty.id}
                 conversationId={conversation.id}
                 onClose={() => setSelectedConversation(null)}
                 sellerVerified={conversation.otherParty.verified}
@@ -809,7 +814,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 sellerRating={conversation.otherParty.rating}
                 productName={conversation.productName}
                 productId={conversation.productId}
-                sellerId={conversation.otherParty.id}
+                sellerId={effectiveCurrentUser?.id || conversation.otherParty.id}
                 conversationId={conversation.id}
                 onClose={() => setSelectedConversation(null)}
                 sellerVerified={conversation.otherParty.verified}
