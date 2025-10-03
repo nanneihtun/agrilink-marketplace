@@ -483,6 +483,15 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                   tierLabel: conversation.otherParty.verified ? 'Verified' : 'Unverified',
                   levelBadge: conversation.otherParty.verified ? 'Tier 1' : 'Unverified'
                 }}
+                product={{
+                  id: conversation.productId,
+                  name: conversation.productName,
+                  sellerId: conversation.otherParty.id,
+                  sellerName: conversation.otherParty.name,
+                  sellerType: conversation.otherParty.type,
+                  location: conversation.otherParty.location,
+                  image: conversation.productImage
+                }}
               />
             </div>
 
@@ -506,6 +515,15 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                   trustLevel: conversation.otherParty.verified ? 'id-verified' : 'unverified',
                   tierLabel: conversation.otherParty.verified ? 'Verified' : 'Unverified',
                   levelBadge: conversation.otherParty.verified ? 'Tier 1' : 'Unverified'
+                }}
+                product={{
+                  id: conversation.productId,
+                  name: conversation.productName,
+                  sellerId: conversation.otherParty.id,
+                  sellerName: conversation.otherParty.name,
+                  sellerType: conversation.otherParty.type,
+                  location: conversation.otherParty.location,
+                  image: conversation.productImage
                 }}
               />
             </div>

@@ -278,7 +278,7 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
               <MessageCircle className="w-4 h-4 mr-2" />
               Chat
             </Button>
-            {currentUserType === 'buyer' && onMakeOffer && (
+            {(currentUserType === 'buyer' || currentUserType === 'trader') && onMakeOffer && (
               <Button 
                 size="sm" 
                 className="flex-1 h-9 bg-green-600 hover:bg-green-700"

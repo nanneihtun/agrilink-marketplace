@@ -451,7 +451,9 @@ export function ChatInterface({
     }
   };
 
-  const canCreateOffer = effectiveCurrentUser && product && effectiveCurrentUser.id !== sellerId;
+  const canCreateOffer = effectiveCurrentUser && product && 
+    (effectiveCurrentUser.userType === 'buyer' || 
+     (effectiveCurrentUser.userType === 'trader' && effectiveCurrentUser.id !== sellerId));
   const isSeller = effectiveCurrentUser?.id === sellerId;
 
   // Debug offer button visibility
