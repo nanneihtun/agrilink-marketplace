@@ -490,7 +490,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
             </div>
 
             {/* Desktop: Side panel */}
-            <div className="hidden md:block fixed right-0 bottom-0 h-[700px] w-96 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300">
+            <div className="hidden md:block fixed right-0 bottom-0 h-[500px] w-96 bg-card shadow-2xl border-l border-t z-50 transition-transform duration-300">
               <ChatInterface
                 sellerName={conversation.otherParty.name}
                 sellerType={conversation.otherParty.type}

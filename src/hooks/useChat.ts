@@ -41,6 +41,7 @@ export const useChat = () => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [subscriptions, setSubscriptions] = useState<Set<string>>(new Set())
 
   const loadConversations = useCallback(async (userId: string) => {
     if (!ENV.isSupabaseConfigured()) {
@@ -153,13 +154,47 @@ export const useChat = () => {
         [conversationId]: formattedMessages
       }))
 
+      // Set up real-time subscription for new messages
+      if (!subscriptions.has(conversationId)) {
+        const channel = supabase
+          .channel(`messages-${conversationId}`)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${conversationId}`
+          }, (payload) => {
+            console.log('🔄 New message received via real-time:', payload.new)
+            
+            const newMessage = {
+              id: payload.new.id,
+              conversationId: payload.new.conversation_id,
+              senderId: payload.new.sender_id,
+              content: payload.new.content,
+              timestamp: new Date(payload.new.created_at).toISOString(),
+              type: payload.new.type || 'text',
+              isRead: false,
+              offerDetails: payload.new.offer_details ? JSON.parse(payload.new.offer_details) : undefined
+            }
+
+            setMessages(prev => ({
+              ...prev,
+              [conversationId]: [...(prev[conversationId] || []), newMessage]
+            }))
+          })
+          .subscribe()
+
+        setSubscriptions(prev => new Set([...prev, conversationId]))
+        console.log('✅ Real-time subscription set up for conversation:', conversationId)
+      }
+
       console.log('✅ Messages loaded from Supabase:', formattedMessages.length)
       
     } catch (err) {
       console.error('❌ Failed to load messages:', err)
       setMessages(prev => ({ ...prev, [conversationId]: [] }))
     }
-  }, [])
+  }, [subscriptions])
 
   const sendMessage = useCallback(async (
     conversationId: string,
@@ -338,6 +373,19 @@ export const useChat = () => {
       return null
     }
   }, [])
+
+  // Cleanup subscriptions on unmount
+  useEffect(() => {
+    return () => {
+      if (ENV.isSupabaseConfigured()) {
+        import('../lib/supabase').then(({ supabase }) => {
+          subscriptions.forEach(conversationId => {
+            supabase.removeChannel(`messages-${conversationId}`)
+          })
+        })
+      }
+    }
+  }, [subscriptions])
 
   return {
     conversations,
