@@ -12,6 +12,7 @@ import { CreateOfferModal } from "./CreateOfferModal";
 import { OfferCard, type Offer } from "./OfferCard";
 import type { Product } from "../data/products";
 import { toast } from "sonner";
+import { OffersService } from "../services/offers";
 
 interface Message {
   id: string;
@@ -129,46 +130,16 @@ export function ChatInterface({
     }
   }, [isLoading]);
   
-  // Load conversation offers - only when conversation key changes (not on every message)
+  // Load conversation offers from Supabase
   useEffect(() => {
-    if (conversationKey && effectiveCurrentUser?.id) {
-      const loadOffers = () => {
+    if (conversationId && effectiveCurrentUser?.id) {
+      const loadOffers = async () => {
         try {
-          console.log('📋 Loading offers for conversation key:', conversationKey);
-          const storedOffers = localStorage.getItem('agriconnect-myanmar-offers');
-          if (storedOffers) {
-            const allOffers = JSON.parse(storedOffers);
-            
-            // More precise filtering for current conversation
-            const conversationOffers = allOffers.filter((offer: Offer) => {
-              const isRelevantToProduct = offer.productId === productId;
-              const isRelevantToUsers = 
-                (offer.sellerId === sellerId && offer.buyerId === effectiveCurrentUser.id) ||
-                (offer.sellerId === effectiveCurrentUser.id && offer.buyerId === sellerId);
-              
-              console.log('🔍 Offer filter check:', {
-                offerId: offer.id.slice(-8),
-                productMatch: isRelevantToProduct,
-                userMatch: isRelevantToUsers,
-                offerSellerId: offer.sellerId,
-                offerBuyerId: offer.buyerId,
-                currentSellerId: sellerId,
-                currentUserId: effectiveCurrentUser.id
-              });
-              
-              return isRelevantToProduct && isRelevantToUsers;
-            });
-            
-            // Sort offers by creation date
-            conversationOffers.sort((a: Offer, b: Offer) => 
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
-            
-            console.log(`✅ Loaded ${conversationOffers.length} offers for conversation`);
-            setOffers(conversationOffers);
-          } else {
-            setOffers([]); // Clear offers if no stored offers
-          }
+          console.log('📋 Loading offers for conversation:', conversationId);
+          const conversationOffers = await OffersService.getOffersForConversation(conversationId);
+          
+          console.log(`✅ Loaded ${conversationOffers.length} offers for conversation`);
+          setOffers(conversationOffers);
         } catch (error) {
           console.error('❌ Failed to load offers:', error);
           setOffers([]); // Clear offers on error
@@ -179,7 +150,7 @@ export function ChatInterface({
     } else {
       setOffers([]); // Clear offers if missing required data
     }
-  }, [conversationKey, effectiveCurrentUser?.id]); // Depend on both conversationKey and user ID
+  }, [conversationId, effectiveCurrentUser?.id]);
 
   // Get current conversation messages - optimized
   const currentMessages = useMemo(() => {
@@ -187,37 +158,7 @@ export function ChatInterface({
     return msgs;
   }, [conversationId, messages[conversationId || '']?.length]);
 
-  // Clean up invalid offers on first load (development only)
-  useEffect(() => {
-    const cleanupInvalidOffers = () => {
-      try {
-        const storedOffers = localStorage.getItem('agriconnect-myanmar-offers');
-        if (storedOffers) {
-          const allOffers = JSON.parse(storedOffers);
-          const validOffers = allOffers.filter((offer: Offer) => {
-            // Keep offers that have valid user IDs and are not corrupted
-            return offer.buyerId && offer.sellerId && offer.buyerName && offer.sellerName && 
-                   offer.productId && offer.createdAt;
-          });
-          
-          if (validOffers.length !== allOffers.length) {
-            console.log(`🧹 Cleaned up ${allOffers.length - validOffers.length} invalid offers`);
-            localStorage.setItem('agriconnect-myanmar-offers', JSON.stringify(validOffers));
-            toast.info(`Cleaned up ${allOffers.length - validOffers.length} old offers`);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to cleanup offers:', error);
-      }
-    };
-    
-    // Only run cleanup once
-    const hasRunCleanup = sessionStorage.getItem('offers-cleanup-done');
-    if (!hasRunCleanup) {
-      cleanupInvalidOffers();
-      sessionStorage.setItem('offers-cleanup-done', 'true');
-    }
-  }, []); // Run once on component mount
+  // Note: localStorage cleanup removed - now using Supabase offers table
 
   // Initialize or get conversation - with stability improvements
   useEffect(() => {
@@ -406,7 +347,7 @@ export function ChatInterface({
   };
 
   // Offer handling functions
-  const handleCreateOffer = (offer: Omit<Offer, "id" | "createdAt" | "acceptedAt" | "completedAt">) => {
+  const handleCreateOffer = async (offer: Omit<Offer, "id" | "createdAt" | "updatedAt">) => {
     console.log('🎯 Creating offer - conversation state before:', {
       conversationId,
       productId,
@@ -422,26 +363,28 @@ export function ChatInterface({
     };
 
     try {
-      // Save to localStorage
-      const storedOffers = localStorage.getItem('agriconnect-myanmar-offers');
-      const allOffers = storedOffers ? JSON.parse(storedOffers) : [];
-      const updatedOffers = [...allOffers, newOffer];
+      // Save to Supabase
+      const savedOffer = await OffersService.createOffer({
+        ...offer,
+        conversationId: conversationId!,
+        productId,
+        buyerId: effectiveCurrentUser.id,
+        sellerId
+      });
       
-      localStorage.setItem('agriconnect-myanmar-offers', JSON.stringify(updatedOffers));
+      console.log('💾 Offer saved to Supabase:', savedOffer.id);
       
-      console.log('💾 Offer saved to localStorage:', newOffer.id);
-      
-      // Update local state - use callback to prevent stale state
+      // Update local state with the saved offer
       setOffers(prevOffers => {
         console.log('📝 Updating offers state - previous count:', prevOffers.length);
         // Check if offer already exists to prevent duplicates
-        const existingOffer = prevOffers.find(o => o.id === newOffer.id);
+        const existingOffer = prevOffers.find(o => o.id === savedOffer.id);
         if (existingOffer) {
           console.log('⚠️ Duplicate offer detected, skipping');
           return prevOffers; // Don't add duplicate
         }
         console.log('✅ Adding new offer to state');
-        return [...prevOffers, newOffer];
+        return [...prevOffers, savedOffer];
       });
       
       // Close modal
@@ -490,23 +433,17 @@ export function ChatInterface({
     updateOfferStatus(offerId, "pending", modifications);
   };
 
-  const updateOfferStatus = (offerId: string, status: Offer["status"], updates: Partial<Offer> = {}) => {
+  const updateOfferStatus = async (offerId: string, status: Offer["status"], updates: Partial<Offer> = {}) => {
     try {
-      const storedOffers = localStorage.getItem('agriconnect-myanmar-offers');
-      const allOffers = storedOffers ? JSON.parse(storedOffers) : [];
+      await OffersService.updateOfferStatus(offerId, status, updates);
       
-      const updatedOffers = allOffers.map((offer: Offer) => 
-        offer.id === offerId 
-          ? { ...offer, status, ...updates }
-          : offer
-      );
-      
-      localStorage.setItem('agriconnect-myanmar-offers', JSON.stringify(updatedOffers));
       setOffers(prev => prev.map(offer => 
         offer.id === offerId 
           ? { ...offer, status, ...updates }
           : offer
       ));
+      
+      toast.success(`Offer ${status}!`);
     } catch (error) {
       console.error('Failed to update offer:', error);
       toast.error('Failed to update offer');
@@ -697,13 +634,12 @@ export function ChatInterface({
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    localStorage.removeItem('agriconnect-myanmar-offers');
                     setOffers([]);
-                    toast.success('All offers cleared from storage');
+                    toast.success('Offers cleared from view');
                   }}
                   className="text-xs text-red-600 border-red-300 hover:bg-red-100"
                 >
-                  🗑️ Clear All
+                  🗑️ Clear View
                 </Button>
               </div>
             </div>
