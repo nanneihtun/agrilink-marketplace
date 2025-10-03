@@ -10,10 +10,10 @@ import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
 import { AccountTypeBadge, getUserVerificationLevel } from "./UserBadgeSystem";
 import { CreateOfferModal } from "./CreateOfferModal";
-import { OfferCard, type Offer } from "./OfferCard";
+import { OfferCard } from "./OfferCard";
 import type { Product } from "../data/products";
 import { toast } from "sonner";
-import { OffersService } from "../services/offers";
+import { OffersService, type Offer } from "../services/offers";
 
 interface Message {
   id: string;

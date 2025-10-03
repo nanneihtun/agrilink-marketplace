@@ -19,28 +19,7 @@ import {
   DollarSign 
 } from "lucide-react";
 import { toast } from "sonner";
-
-export interface Offer {
-  id: string;
-  productId: string;
-  productName: string;
-  sellerId: string;
-  sellerName: string;
-  buyerId: string;
-  buyerName: string;
-  price: number;
-  quantity: number;
-  unit: string;
-  description?: string;
-  deliveryTerms: string;
-  deliveryLocation: string;
-  validUntil: string;
-  status: "pending" | "accepted" | "declined" | "expired" | "completed";
-  createdAt: string;
-  acceptedAt?: string;
-  completedAt?: string;
-  notes?: string;
-}
+import { type Offer } from "../services/offers";
 
 interface OfferCardProps {
   offer: Offer;

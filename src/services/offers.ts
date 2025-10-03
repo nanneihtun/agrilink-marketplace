@@ -4,8 +4,11 @@ export interface Offer {
   id: string;
   conversationId: string;
   productId: string;
+  productName?: string;
   buyerId: string;
+  buyerName?: string;
   sellerId: string;
+  sellerName?: string;
   price: number;
   quantity: number;
   unit: string;
@@ -58,7 +61,12 @@ export class OffersService {
   static async getOffersForConversation(conversationId: string): Promise<Offer[]> {
     const { data, error } = await supabase
       .from('offers')
-      .select('*')
+      .select(`
+        *,
+        product:products!offers_product_id_fkey(id, name),
+        buyer:users!offers_buyer_id_fkey(id, name),
+        seller:users!offers_seller_id_fkey(id, name)
+      `)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -140,8 +148,11 @@ export class OffersService {
       id: dbOffer.id,
       conversationId: dbOffer.conversation_id,
       productId: dbOffer.product_id,
+      productName: dbOffer.product?.name,
       buyerId: dbOffer.buyer_id,
+      buyerName: dbOffer.buyer?.name,
       sellerId: dbOffer.seller_id,
+      sellerName: dbOffer.seller?.name,
       price: parseFloat(dbOffer.price),
       quantity: dbOffer.quantity,
       unit: dbOffer.unit,
