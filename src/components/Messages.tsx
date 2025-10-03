@@ -206,7 +206,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   }, [currentUser]);
   
   // Use real chat data with the effective current user
-  const { conversations, messages, loading, loadConversations, error } = useChat(effectiveCurrentUser?.id);
+  const { conversations, messages, loading, loadConversations, loadMessages, error } = useChat(effectiveCurrentUser?.id);
   
   // Initialize debug logging once
   useEffect(() => {
