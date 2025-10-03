@@ -23,8 +23,13 @@ interface Conversation {
   sellerId: string
   productId: string
   productName: string
+  productImage?: string
   buyerName: string
+  buyerType: string
+  buyerLocation: string
   sellerName: string
+  sellerType: string
+  sellerLocation: string
   lastMessage?: string
   lastMessageTime?: string
   unreadCount: number
@@ -64,9 +69,9 @@ export const useChat = () => {
         .from('conversations')
         .select(`
           *,
-          buyer:users!conversations_buyer_id_fkey(id, name),
-          seller:users!conversations_seller_id_fkey(id, name),
-          product:products!conversations_product_id_fkey(id, name)
+          buyer:users!conversations_buyer_id_fkey(id, name, user_type, location),
+          seller:users!conversations_seller_id_fkey(id, name, user_type, location),
+          product:products!conversations_product_id_fkey(id, name, image)
         `)
         .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
         .order('updated_at', { ascending: false })
@@ -81,8 +86,13 @@ export const useChat = () => {
         sellerId: conv.seller_id,
         productId: conv.product_id,
         productName: conv.product?.name || 'Unknown Product',
+        productImage: conv.product?.image || 'https://images.unsplash.com/photo-1546470427-227c013b2b5f?w=400&h=300&fit=crop',
         buyerName: conv.buyer?.name || 'Unknown Buyer',
+        buyerType: conv.buyer?.user_type || 'buyer',
+        buyerLocation: conv.buyer?.location || 'Unknown Location',
         sellerName: conv.seller?.name || 'Unknown Seller',
+        sellerType: conv.seller?.user_type || 'farmer',
+        sellerLocation: conv.seller?.location || 'Unknown Location',
         lastMessage: conv.last_message,
         lastMessageTime: conv.last_message_time,
         unreadCount: conv.unread_count || 0,
