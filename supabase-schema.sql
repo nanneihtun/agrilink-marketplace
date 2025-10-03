@@ -117,9 +117,30 @@ CREATE TABLE public.reviews (
   UNIQUE(reviewer_id, reviewee_id, product_id)
 );
 
--- Deals/Offers table
+-- Offers table (for detailed offer management)
+CREATE TABLE public.offers (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  conversation_id UUID REFERENCES public.chats(id) ON DELETE CASCADE,
+  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
+  buyer_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  seller_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  quantity INTEGER NOT NULL,
+  unit VARCHAR(50),
+  description TEXT,
+  delivery_terms TEXT,
+  delivery_location VARCHAR(255),
+  valid_until TIMESTAMP WITH TIME ZONE,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'expired', 'completed')),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Deals/Transactions table (for completed offers)
 CREATE TABLE public.deals (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  offer_id UUID REFERENCES public.offers(id) ON DELETE CASCADE,
   product_id UUID REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
   buyer_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   seller_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,

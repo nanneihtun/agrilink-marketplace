@@ -46,11 +46,14 @@ export function OfferCard({
   const [modifiedDeliveryTerms, setModifiedDeliveryTerms] = useState(offer.deliveryTerms);
   const [modifiedNotes, setModifiedNotes] = useState(offer.notes || "");
 
+  // Check if offer is expired
+  const isExpired = offer.validUntil ? new Date(offer.validUntil) < new Date() : false;
+  
   // Ensure proper user matching with fallback checks
   const isSeller = currentUserId && offer.sellerId && currentUserId === offer.sellerId;
   const isBuyer = currentUserId && offer.buyerId && currentUserId === offer.buyerId;
-  const canAccept = isBuyer && offer.status === "pending" && !isExpired;
-  const canDecline = isBuyer && offer.status === "pending" && !isExpired;
+  const canAccept = isSeller && offer.status === "pending" && !isExpired;
+  const canDecline = isSeller && offer.status === "pending" && !isExpired;
   const canComplete = offer.status === "accepted" && (isSeller || isBuyer);
 
   const formatPrice = (price: number) => {
@@ -88,7 +91,7 @@ export function OfferCard({
     }
   };
 
-  const isExpired = new Date(offer.validUntil) < new Date();
+  // isExpired already declared above
 
   const handleAccept = () => {
     if (onAccept) {

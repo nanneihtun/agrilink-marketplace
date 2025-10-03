@@ -52,6 +52,7 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import { useProducts } from "./hooks/useProducts";
 import { useChat } from "./hooks/useChat";
+import { supabase } from "./lib/supabase";
 
 
 // Optimized custom hooks
@@ -452,8 +453,24 @@ export default function App() {
     }
     
     try {
-      // TODO: Implement Supabase saved products table
-      // For now, just show success message
+      const { data, error } = await supabase
+        .from('saved_products')
+        .upsert({
+          user_id: currentUser.id,
+          product_id: productId,
+          price_when_saved: currentPrice,
+          price_alert: true,
+          stock_alert: false
+        }, {
+          onConflict: 'user_id,product_id'
+        });
+
+      if (error) {
+        console.error("Failed to save product:", error);
+        toast.error("Failed to save product");
+        return;
+      }
+
       toast.success("Product saved for price tracking");
     } catch (error) {
       console.error("Failed to save product:", error);
@@ -482,8 +499,26 @@ export default function App() {
     if (!currentUser || !selectedProductForOffer) return;
     
     try {
-      // TODO: Implement Supabase offers table
-      // For now, just show success message
+      // Import OffersService dynamically to avoid circular imports
+      const { OffersService } = await import('./services/offers');
+      
+      // Create the offer
+      await OffersService.createOffer({
+        conversationId: '', // Will be set when chat is created
+        productId: selectedProductForOffer.id,
+        buyerId: currentUser.id,
+        sellerId: selectedProductForOffer.sellerId,
+        price: offerData.price,
+        quantity: offerData.quantity,
+        unit: offerData.unit || selectedProductForOffer.unit,
+        description: offerData.description,
+        deliveryTerms: offerData.deliveryTerms,
+        deliveryLocation: offerData.deliveryLocation,
+        validUntil: offerData.validUntil || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        status: 'pending',
+        notes: offerData.notes
+      });
+      
       toast.success("Offer sent successfully!");
       setShowOfferModal(false);
       setSelectedProductForOffer(null);
