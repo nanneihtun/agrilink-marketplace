@@ -10,7 +10,7 @@ import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
 import { AccountTypeBadge, getUserVerificationLevel } from "./UserBadgeSystem";
 import { CreateOfferModal } from "./CreateOfferModal";
-// import { OfferCard } from "./OfferCard"; // Temporarily disabled to debug circular dependency
+import { OfferCard } from "./OfferCard";
 import type { Product } from "../data/products";
 import { toast } from "sonner";
 import { OffersService, type Offer } from "../services/offers";
@@ -601,11 +601,15 @@ export function ChatInterface({
                   <div className="space-y-3">
                     {offers.map((offer) => (
                       <div key={offer.id} className="w-full">
-                        {/* Temporarily disabled OfferCard to debug circular dependency */}
-                        <div className="p-3 border rounded-lg">
-                          <p>Offer: {offer.price} MMK for {offer.quantity} {offer.unit}</p>
-                          <p>Status: {offer.status}</p>
-                        </div>
+                        <OfferCard
+                          offer={offer}
+                          currentUserId={effectiveCurrentUser?.id || ""}
+                          onAccept={handleAcceptOffer}
+                          onDecline={handleDeclineOffer}
+                          onModify={handleModifyOffer}
+                          onMarkCompleted={handleMarkCompleted}
+                          canModify={effectiveCurrentUser?.id === sellerId}
+                        />
                       </div>
                     ))}
                   </div>
