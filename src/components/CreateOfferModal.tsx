@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Product } from "../data/products";
-import type { Offer } from "./OfferCard";
+import type { Offer } from "../services/offers";
 
 interface CreateOfferModalProps {
   isOpen: boolean;

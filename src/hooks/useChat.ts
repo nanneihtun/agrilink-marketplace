@@ -41,7 +41,7 @@ export const useChat = () => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [subscriptions, setSubscriptions] = useState<Set<string>>(new Set())
+  const [subscriptions, setSubscriptions] = useState<Map<string, any>>(new Map())
 
   const loadConversations = useCallback(async (userId: string) => {
     if (!ENV.isSupabaseConfigured()) {
@@ -189,7 +189,7 @@ export const useChat = () => {
           })
           .subscribe()
 
-        setSubscriptions(prev => new Set([...prev, conversationId]))
+        setSubscriptions(prev => new Map([...prev, [conversationId, channel]]))
         console.log('✅ Real-time subscription set up for conversation:', conversationId)
       }
 
@@ -384,8 +384,14 @@ export const useChat = () => {
     return () => {
       if (ENV.isSupabaseConfigured()) {
         import('../lib/supabase').then(({ supabase }) => {
-          subscriptions.forEach(conversationId => {
-            supabase.removeChannel(`messages-${conversationId}`)
+          subscriptions.forEach((channel, conversationId) => {
+            console.log('🧹 Cleaning up subscription for conversation:', conversationId)
+            if (channel && typeof channel.unsubscribe === 'function') {
+              channel.unsubscribe()
+            } else {
+              // Fallback to removeChannel if unsubscribe is not available
+              supabase.removeChannel(`messages-${conversationId}`)
+            }
           })
         })
       }
