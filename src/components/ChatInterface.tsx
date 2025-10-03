@@ -4,7 +4,8 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import { Send, MapPin, Star, Shield, AlertTriangle, CheckCircle, Clock, User, X, Package, Handshake } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Send, MapPin, Star, Shield, AlertTriangle, CheckCircle, Clock, User, X, Package, Handshake, DollarSign } from "lucide-react";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
 import { AccountTypeBadge, getUserVerificationLevel } from "./UserBadgeSystem";
@@ -453,6 +454,16 @@ export function ChatInterface({
   const canCreateOffer = effectiveCurrentUser && product && effectiveCurrentUser.id !== sellerId;
   const isSeller = effectiveCurrentUser?.id === sellerId;
 
+  // Debug offer button visibility
+  console.log('🔍 ChatInterface Offer Button Debug:', {
+    effectiveCurrentUser: effectiveCurrentUser?.id,
+    product: product?.id,
+    sellerId,
+    canCreateOffer,
+    isSeller,
+    currentUserType: effectiveCurrentUser?.userType
+  });
+
   return (
     <Card className="h-full flex flex-col border-0 rounded-none">
       {/* Header - Fixed */}
@@ -471,15 +482,23 @@ export function ChatInterface({
           </div>
           <div className="flex gap-2">
             {canCreateOffer && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowCreateOffer(true)}
-                className="text-primary border-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Package className="w-4 h-4 mr-1" />
-                Offer
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      className="h-9 bg-green-600 hover:bg-green-700"
+                      onClick={() => setShowCreateOffer(true)}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Make Offer
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Make an offer for this product</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
             <Button variant="outline" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
