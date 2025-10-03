@@ -225,6 +225,14 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
     }
   }, [effectiveCurrentUser?.id, loadConversations]);
 
+  // Load messages when a conversation is selected
+  useEffect(() => {
+    if (selectedConversation && effectiveCurrentUser?.id) {
+      console.log('🔄 Loading messages for selected conversation:', selectedConversation);
+      loadMessages(selectedConversation);
+    }
+  }, [selectedConversation, effectiveCurrentUser?.id, loadMessages]);
+
   // Get storage statistics for debugging - simplified
   useEffect(() => {
     if (debugMode) {
