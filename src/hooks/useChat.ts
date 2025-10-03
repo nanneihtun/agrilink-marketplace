@@ -165,6 +165,7 @@ export const useChat = () => {
             filter: `conversation_id=eq.${conversationId}`
           }, (payload) => {
             console.log('🔄 New message received via real-time:', payload.new)
+            console.log('🔄 Current messages before update:', messages[conversationId]?.length || 0)
             
             const newMessage = {
               id: payload.new.id,
@@ -177,10 +178,14 @@ export const useChat = () => {
               offerDetails: payload.new.offer_details ? JSON.parse(payload.new.offer_details) : undefined
             }
 
-            setMessages(prev => ({
-              ...prev,
-              [conversationId]: [...(prev[conversationId] || []), newMessage]
-            }))
+            setMessages(prev => {
+              const updated = {
+                ...prev,
+                [conversationId]: [...(prev[conversationId] || []), newMessage]
+              }
+              console.log('🔄 Messages after update:', updated[conversationId]?.length || 0)
+              return updated
+            })
           })
           .subscribe()
 

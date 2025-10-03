@@ -133,14 +133,16 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       // Get other party name from conversation data
       const otherPartyName = conv.buyerId === effectiveCurrentUser?.id ? conv.sellerName : conv.buyerName;
       
-      // Get conversation messages
+      // Get conversation messages for unread count
       const convMessages = messages[conv.id] || [];
-      const lastMessage = convMessages[convMessages.length - 1];
       
       // Count unread messages (messages not from current user that don't have read status)
       const unreadCount = convMessages.filter(msg => 
         msg.senderId !== effectiveCurrentUser?.id && msg.status !== 'read'
       ).length;
+      
+      // Use last message from conversation data (from Supabase) for preview
+      const lastMessageFromConv = conv.lastMessage;
       
       const finalConversation = {
         id: conv.id,
@@ -155,10 +157,10 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
           rating: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerRating : conv.buyerRating,
           verified: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerified : conv.buyerVerified
         },
-        lastMessage: lastMessage ? {
-          content: lastMessage.content,
-          timestamp: lastMessage.timestamp,
-          isOwn: lastMessage.senderId === effectiveCurrentUser?.id
+        lastMessage: lastMessageFromConv ? {
+          content: lastMessageFromConv,
+          timestamp: conv.lastMessageTime || conv.createdAt,
+          isOwn: false // We don't know sender from conversation data, will be updated when messages load
         } : {
           content: 'No messages yet',
           timestamp: conv.lastMessageTime || conv.createdAt,

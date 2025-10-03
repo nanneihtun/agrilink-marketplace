@@ -534,7 +534,7 @@ export function ChatInterface({
         )}
 
 
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+        <ScrollArea ref={scrollAreaRef} className="h-[300px] p-4">
           <div className="space-y-4 pb-4">
             {isLoading && currentMessages.length === 0 && offers.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
