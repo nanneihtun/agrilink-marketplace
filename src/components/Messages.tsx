@@ -133,13 +133,8 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       // Get other party name from conversation data
       const otherPartyName = conv.buyerId === effectiveCurrentUser?.id ? conv.sellerName : conv.buyerName;
       
-      // Get conversation messages for unread count
-      const convMessages = messages[conv.id] || [];
-      
-      // Count unread messages (messages not from current user that don't have read status)
-      const unreadCount = convMessages.filter(msg => 
-        msg.senderId !== effectiveCurrentUser?.id && msg.status !== 'read'
-      ).length;
+      // Use unread count from Supabase conversation data
+      const unreadCount = conv.unreadCount || 0;
       
       // Use last message from conversation data (from Supabase) for preview
       const lastMessageFromConv = conv.lastMessage;
