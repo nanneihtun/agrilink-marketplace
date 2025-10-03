@@ -10,7 +10,8 @@ import { useChat } from "../hooks/useChat";
 import { useAuth } from "../hooks/useAuth";
 import { AccountTypeBadge, getUserVerificationLevel } from "./UserBadgeSystem";
 import { CreateOfferModal } from "./CreateOfferModal";
-import { OfferCard } from "./OfferCard";
+import { OfferCardCompact } from "./OfferCardCompact";
+import { OfferDetailsModal } from "./OfferDetailsModal";
 import type { Product } from "../data/products";
 import { toast } from "sonner";
 import { OffersService, type Offer } from "../services/offers";
@@ -88,21 +89,29 @@ export function ChatInterface({
   const { messages, sendMessage, startConversation, loadMessages } = useChat();
   const [newMessage, setNewMessage] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
-  
-  // Debug conversation ID changes
-  useEffect(() => {
-    console.log('🔄 Conversation ID changed:', {
-      old: conversationId,
-      new: conversationId,
-      timestamp: new Date().toISOString()
-    });
-  }, [conversationId]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
   // Offer functionality
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [showOfferDetails, setShowOfferDetails] = useState(false);
+
+  // Get current conversation messages - moved up to avoid initialization order issues
+  const currentMessages = useMemo(() => {
+    const msgs = conversationId ? messages[conversationId] || [] : [];
+    return msgs;
+  }, [conversationId, messages[conversationId || '']?.length]);
+  
+  // Debug conversation ID changes
+  useEffect(() => {
+    console.log('🔄 Conversation ID changed:', {
+      conversationId,
+      hasMessages: currentMessages.length > 0,
+      timestamp: new Date().toISOString()
+    });
+  }, [conversationId, currentMessages.length]);
 
   // Stable conversation key to prevent unnecessary reloads - exclude conversationId to prevent loops
   const conversationKey = useMemo(() => {
@@ -153,11 +162,6 @@ export function ChatInterface({
     }
   }, [conversationId, effectiveCurrentUser?.id]);
 
-  // Get current conversation messages - optimized
-  const currentMessages = useMemo(() => {
-    const msgs = conversationId ? messages[conversationId] || [] : [];
-    return msgs;
-  }, [conversationId, messages[conversationId || '']?.length]);
 
   // Note: localStorage cleanup removed - now using Supabase offers table
 
@@ -176,12 +180,6 @@ export function ChatInterface({
       // Don't re-initialize if we already have a stable conversation
       if (conversationId) {
         console.log('✅ Chat already initialized:', conversationId);
-        // Always fetch messages to ensure they're loaded
-        try {
-          await loadMessages(conversationId);
-        } catch (error) {
-          console.error('❌ Failed to fetch messages for existing conversation:', error);
-        }
         return;
       }
       
@@ -265,6 +263,9 @@ export function ChatInterface({
       });
       return;
     }
+
+    // Store conversation ID to prevent it from being lost
+    const currentConversationId = conversationId;
     
     const messageToSend = newMessage.trim();
     console.log('📤 Sending message:', {
@@ -278,7 +279,7 @@ export function ChatInterface({
     
     try {
       setIsLoading(true);
-      const sentMessage = await sendMessage(conversationId, messageToSend);
+      const sentMessage = await sendMessage(currentConversationId, messageToSend);
       console.log('✅ Message sent successfully:', sentMessage);
       
       // Temporarily disabled loadMessages to prevent duplicate issues
@@ -305,10 +306,21 @@ export function ChatInterface({
       
       // Additional check to ensure conversation ID is still valid
       console.log('🔍 Final conversation check:', {
-        conversationId: conversationId,
-        stillValid: !!conversationId,
+        conversationId: currentConversationId,
+        stillValid: !!currentConversationId,
+        messageCount: currentMessages.length,
         timestamp: new Date().toISOString()
       });
+      
+      // Force scroll to bottom after sending
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+          if (scrollContainer) {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+        }
+      }, 100);
     }
   };
 
@@ -430,8 +442,36 @@ export function ChatInterface({
     updateOfferStatus(offerId, "completed", { completedAt: new Date().toISOString() });
   };
 
-  const handleModifyOffer = (offerId: string, modifications: Partial<Offer>) => {
-    updateOfferStatus(offerId, "pending", modifications);
+  const handleQuickAction = (offerId: string, action: string) => {
+    switch (action) {
+      case 'accept':
+        handleAcceptOffer(offerId);
+        break;
+      case 'decline':
+        handleDeclineOffer(offerId);
+        break;
+      case 'in_progress':
+        updateOfferStatus(offerId, "in_progress");
+        break;
+      case 'shipped':
+        updateOfferStatus(offerId, "shipped", { shippedAt: new Date().toISOString() });
+        break;
+      case 'delivered':
+        updateOfferStatus(offerId, "delivered", { deliveredAt: new Date().toISOString() });
+        break;
+      case 'completed':
+        updateOfferStatus(offerId, "completed", { completedAt: new Date().toISOString() });
+        break;
+      case 'cancel':
+        updateOfferStatus(offerId, "cancelled");
+        break;
+      default:
+        console.warn('Unknown quick action:', action);
+    }
+  };
+
+  const handleUpdateOfferStatus = (offerId: string, status: Offer['status'], updates?: any) => {
+    updateOfferStatus(offerId, status, updates);
   };
 
   const updateOfferStatus = async (offerId: string, status: Offer["status"], updates: Partial<Offer> = {}) => {
@@ -596,21 +636,20 @@ export function ChatInterface({
                   </div>
                 ))}
                 
-                {/* Display Offers - Improved Layout */}
+                {/* Display Offers - Compact Layout */}
                 {offers.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {offers.map((offer) => (
-                      <div key={offer.id} className="w-full">
-                        <OfferCard
-                          offer={offer}
-                          currentUserId={effectiveCurrentUser?.id || ""}
-                          onAccept={handleAcceptOffer}
-                          onDecline={handleDeclineOffer}
-                          onModify={handleModifyOffer}
-                          onMarkCompleted={handleMarkCompleted}
-                          canModify={effectiveCurrentUser?.id === sellerId}
-                        />
-                      </div>
+                      <OfferCardCompact
+                        key={offer.id}
+                        offer={offer}
+                        currentUserId={effectiveCurrentUser?.id || ""}
+                        onViewDetails={(offer) => {
+                          setSelectedOffer(offer);
+                          setShowOfferDetails(true);
+                        }}
+                        onQuickAction={handleQuickAction}
+                      />
                     ))}
                   </div>
                 )}
@@ -752,6 +791,18 @@ export function ChatInterface({
           />
         );
       })()}
+
+      {/* Offer Details Modal */}
+      <OfferDetailsModal
+        offer={selectedOffer}
+        isOpen={showOfferDetails}
+        onClose={() => {
+          setShowOfferDetails(false);
+          setSelectedOffer(null);
+        }}
+        currentUserId={effectiveCurrentUser?.id || ""}
+        onUpdateStatus={handleUpdateOfferStatus}
+      />
     </Card>
   );
 }

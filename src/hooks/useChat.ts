@@ -266,8 +266,11 @@ export const useChat = () => {
 
       console.log('✅ Message sent to Supabase')
       
+      return newMessage; // Return the message object
+      
     } catch (err) {
       console.error('❌ Failed to send message:', err)
+      throw err; // Re-throw error so ChatInterface can handle it
     }
   }, [])
 

@@ -131,8 +131,19 @@ CREATE TABLE public.offers (
   delivery_terms TEXT,
   delivery_location VARCHAR(255),
   valid_until TIMESTAMP WITH TIME ZONE,
-  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'expired', 'completed')),
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'in_progress', 'shipped', 'delivered', 'completed', 'cancelled', 'disputed')),
   notes TEXT,
+  -- Transaction tracking fields
+  payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'refunded')),
+  shipping_status VARCHAR(20) DEFAULT 'pending' CHECK (shipping_status IN ('pending', 'shipped', 'delivered')),
+  tracking_number VARCHAR(100),
+  delivery_address TEXT,
+  payment_method VARCHAR(50),
+  -- Timestamps for each stage
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  shipped_at TIMESTAMP WITH TIME ZONE,
+  delivered_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -26,9 +26,8 @@ interface OfferCardProps {
   currentUserId: string;
   onAccept?: (offerId: string) => void;
   onDecline?: (offerId: string) => void;
-  onModify?: (offerId: string, modifications: Partial<Offer>) => void;
+  onUpdateStatus?: (offerId: string, status: Offer['status'], updates?: any) => void;
   onMarkCompleted?: (offerId: string) => void;
-  canModify?: boolean;
 }
 
 export function OfferCard({ 
@@ -36,15 +35,12 @@ export function OfferCard({
   currentUserId, 
   onAccept, 
   onDecline, 
-  onModify,
-  onMarkCompleted,
-  canModify = false 
+  onUpdateStatus,
+  onMarkCompleted
 }: OfferCardProps) {
-  const [isModifying, setIsModifying] = useState(false);
-  const [modifiedPrice, setModifiedPrice] = useState(offer.price);
-  const [modifiedQuantity, setModifiedQuantity] = useState(offer.quantity);
-  const [modifiedDeliveryTerms, setModifiedDeliveryTerms] = useState(offer.deliveryTerms);
-  const [modifiedNotes, setModifiedNotes] = useState(offer.notes || "");
+  const [showTrackingForm, setShowTrackingForm] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState(offer.trackingNumber || "");
+  const [deliveryAddress, setDeliveryAddress] = useState(offer.deliveryAddress || "");
 
   // Check if offer is expired
   const isExpired = offer.validUntil ? new Date(offer.validUntil) < new Date() : false;
@@ -52,9 +48,15 @@ export function OfferCard({
   // Ensure proper user matching with fallback checks
   const isSeller = currentUserId && offer.sellerId && currentUserId === offer.sellerId;
   const isBuyer = currentUserId && offer.buyerId && currentUserId === offer.buyerId;
+  
+  // Status-based permissions
   const canAccept = isSeller && offer.status === "pending" && !isExpired;
   const canDecline = isSeller && offer.status === "pending" && !isExpired;
-  const canComplete = offer.status === "accepted" && (isSeller || isBuyer);
+  const canMarkInProgress = isSeller && offer.status === "accepted";
+  const canMarkShipped = isSeller && offer.status === "in_progress";
+  const canMarkDelivered = isBuyer && offer.status === "shipped";
+  const canMarkCompleted = (isSeller || isBuyer) && offer.status === "delivered";
+  const canCancel = (isSeller || isBuyer) && ["pending", "accepted", "in_progress"].includes(offer.status);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price) + ' MMK';
@@ -73,9 +75,12 @@ export function OfferCard({
     switch (status) {
       case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "accepted": return "bg-green-100 text-green-800 border-green-200";
-      case "declined": return "bg-red-100 text-red-800 border-red-200";
-      case "expired": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "completed": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "in_progress": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "shipped": return "bg-purple-100 text-purple-800 border-purple-200";
+      case "delivered": return "bg-indigo-100 text-indigo-800 border-indigo-200";
+      case "completed": return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "cancelled": return "bg-red-100 text-red-800 border-red-200";
+      case "disputed": return "bg-orange-100 text-orange-800 border-orange-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -84,9 +89,12 @@ export function OfferCard({
     switch (status) {
       case "pending": return <Clock className="w-4 h-4" />;
       case "accepted": return <CheckCircle className="w-4 h-4" />;
-      case "declined": return <XCircle className="w-4 h-4" />;
-      case "expired": return <Calendar className="w-4 h-4" />;
+      case "in_progress": return <Package className="w-4 h-4" />;
+      case "shipped": return <Truck className="w-4 h-4" />;
+      case "delivered": return <CheckCircle className="w-4 h-4" />;
       case "completed": return <Handshake className="w-4 h-4" />;
+      case "cancelled": return <XCircle className="w-4 h-4" />;
+      case "disputed": return <XCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };

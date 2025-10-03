@@ -834,7 +834,15 @@ export default function App() {
                   />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredProducts.map((product) => {
+                    {authLoading ? (
+                      // Show loading skeleton while authentication is in progress
+                      Array.from({ length: 6 }).map((_, index) => (
+                        <div key={index} className="animate-pulse">
+                          <div className="bg-gray-200 rounded-lg h-64"></div>
+                        </div>
+                      ))
+                    ) : (
+                      filteredProducts.map((product) => {
                       const verificationStatus =
                         getSellerVerificationStatus(
                           product.sellerId,
@@ -844,6 +852,7 @@ export default function App() {
                         <ProductCard
                           key={product.id}
                           product={product}
+                          currentUser={currentUser}
                           onChat={chatManagement.handleChat}
                           onViewDetails={navigation.handleViewDetails}
                           onViewStorefront={navigation.handleViewStorefront}
@@ -870,7 +879,8 @@ export default function App() {
                           savedProductIds={savedProducts.map(sp => sp.productId)}
                         />
                       );
-                    })}
+                    })
+                    )}
                   </div>
 
                   {filteredProducts.length === 0 && (
@@ -1154,6 +1164,7 @@ export default function App() {
                     productName={selectedProduct.name}
                     productId={selectedProduct.id}
                     sellerId={selectedProduct.sellerId}
+                    product={selectedProduct}
                     onClose={() => setSelectedChat(null)}
                     sellerVerified={seller?.verified || false}
                     currentUserVerified={
@@ -1163,7 +1174,6 @@ export default function App() {
                     sellerVerificationStatus={
                       sellerVerificationStatus
                     }
-                    product={selectedProduct}
                   />
                 </div>
               </>

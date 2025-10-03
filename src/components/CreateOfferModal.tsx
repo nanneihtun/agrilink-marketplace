@@ -40,7 +40,16 @@ export function CreateOfferModal({
   sellerName,
   onCreateOffer
 }: CreateOfferModalProps) {
-  const [price, setPrice] = useState(product.price);
+  // Debug logging to see what product data we're getting
+  console.log('🔍 CreateOfferModal product data:', {
+    name: product.name,
+    price: product.price,
+    quantity: product.quantity,
+    unit: product.unit,
+    category: product.category
+  });
+
+  const [price, setPrice] = useState(product.price || 0);
   const [quantity, setQuantity] = useState(1);
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
@@ -49,6 +58,7 @@ export function CreateOfferModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const formatPrice = (price: number) => {
+    if (!price || isNaN(price)) return '0 MMK';
     return new Intl.NumberFormat('en-US').format(price) + ' MMK';
   };
 
@@ -99,13 +109,13 @@ export function CreateOfferModal({
       buyerName,
       price,
       quantity,
-      unit: product.unit,
-      description: product.description,
+      unit: product.unit || "units",
+      description: product.description || "",
       deliveryTerms: `${deliveryTerms}${deliveryLocation ? ` | Location: ${deliveryLocation}` : ""}`,
-      deliveryLocation,
+      deliveryLocation: deliveryLocation || "",
       validUntil: validUntil.toISOString(),
       status: "pending",
-      notes: notes.trim() || undefined
+      notes: notes.trim() || ""
     };
 
     console.log('✅ CreateOfferModal - Final offer object:', offer);
@@ -152,11 +162,11 @@ export function CreateOfferModal({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Listed Price</p>
-                  <p className="font-medium">{formatPrice(product.price)} per {product.unit}</p>
+                  <p className="font-medium">{formatPrice(product.price)} per {product.unit || 'unit'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Available</p>
-                  <p className="font-medium">{product.quantity} {product.unit}</p>
+                  <p className="font-medium">{product.quantity || 0} {product.unit || 'units'}</p>
                 </div>
               </div>
               <div className="mt-2">
@@ -192,7 +202,7 @@ export function CreateOfferModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity ({product.unit})</Label>
+                <Label htmlFor="quantity">Quantity ({product.unit || 'units'})</Label>
                 <Input
                   id="quantity"
                   type="number"

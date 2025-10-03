@@ -486,6 +486,10 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 product={{
                   id: conversation.productId,
                   name: conversation.productName,
+                  price: conversation.productPrice || 0,
+                  quantity: conversation.productQuantity || 0,
+                  unit: conversation.productUnit || 'units',
+                  category: conversation.productCategory || 'General',
                   sellerId: conversation.otherParty.id,
                   sellerName: conversation.otherParty.name,
                   sellerType: conversation.otherParty.type,
@@ -519,6 +523,10 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                 product={{
                   id: conversation.productId,
                   name: conversation.productName,
+                  price: conversation.productPrice || 0,
+                  quantity: conversation.productQuantity || 0,
+                  unit: conversation.productUnit || 'units',
+                  category: conversation.productCategory || 'General',
                   sellerId: conversation.otherParty.id,
                   sellerName: conversation.otherParty.name,
                   sellerType: conversation.otherParty.type,
