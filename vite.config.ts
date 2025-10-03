@@ -58,12 +58,16 @@
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
+            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip', '@radix-ui/react-select', '@radix-ui/react-scroll-area'],
             charts: ['recharts'],
             forms: ['react-hook-form'],
+            supabase: ['@supabase/supabase-js'],
+            icons: ['lucide-react'],
           },
         },
       },
+      // Optimize for Hobby plan
+      minify: 'esbuild', // Use esbuild instead of terser
     },
     server: {
       port: 3000,
