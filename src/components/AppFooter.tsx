@@ -33,11 +33,11 @@ export function AppFooter({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Sprout className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm md:text-base">
+              <span className="font-medium text-xs md:text-sm">
                 For Farmers
               </span>
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Direct sales • Fair pricing • Wider market
               reach
             </p>
@@ -46,11 +46,11 @@ export function AppFooter({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Truck className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm md:text-base">
+              <span className="font-medium text-xs md:text-sm">
                 For Traders
               </span>
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Quality sourcing • Efficient distribution •
               Network growth
             </p>
@@ -59,11 +59,11 @@ export function AppFooter({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <ShoppingCart className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm md:text-base">
+              <span className="font-medium text-xs md:text-sm">
                 For Buyers
               </span>
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Fresh products • Direct from source • 
               Transparent pricing
             </p>
@@ -78,7 +78,7 @@ export function AppFooter({
       <div className="w-full max-w-5xl mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Project Information */}
-          <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
+          <div className="text-xs text-muted-foreground text-center md:text-left">
             <p>
               © 2025 AgriLink - Academic Project developed
               in partnership with Infinity Success Co. Ltd.
@@ -86,7 +86,7 @@ export function AppFooter({
           </div>
 
           {/* Footer Links */}
-          <div className="flex items-center gap-4 text-xs md:text-sm">
+          <div className="flex items-center gap-4 text-xs">
             <button
               onClick={onShowAboutUs}
               className="text-muted-foreground hover:text-primary transition-colors duration-200"
