@@ -118,7 +118,7 @@ export class PerformanceErrorBoundary extends Component<Props, State> {
                   {this.state.error?.message || 'Unknown error'}
                 </code>
                 {this.state.errorCount > 1 && (
-                  <p className="text-amber-600">
+                  <p className="text-primary">
                     This error has occurred {this.state.errorCount} times.
                   </p>
                 )}

@@ -33,39 +33,36 @@ export function AppFooter({
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Sprout className="w-4 h-4 text-primary" />
-              <span className="font-medium text-xs md:text-sm">
+              <span className="font-medium text-xs">
                 For Farmers
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Direct sales • Fair pricing • Wider market
-              reach
+            <p className="text-xs text-muted-foreground leading-tight">
+              Direct sales • Fair pricing • Wider reach
             </p>
           </div>
 
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Truck className="w-4 h-4 text-primary" />
-              <span className="font-medium text-xs md:text-sm">
+              <span className="font-medium text-xs">
                 For Traders
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Quality sourcing • Efficient distribution •
-              Network growth
+            <p className="text-xs text-muted-foreground leading-tight">
+              Quality sourcing • Efficient distribution • Growth
             </p>
           </div>
 
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <ShoppingCart className="w-4 h-4 text-primary" />
-              <span className="font-medium text-xs md:text-sm">
+              <span className="font-medium text-xs">
                 For Buyers
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Fresh products • Direct from source • 
-              Transparent pricing
+            <p className="text-xs text-muted-foreground leading-tight">
+              Fresh products • Direct source • Fair pricing
             </p>
           </div>
         </div>
@@ -86,24 +83,24 @@ export function AppFooter({
           </div>
 
           {/* Footer Links */}
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <button
               onClick={onShowAboutUs}
-              className="text-muted-foreground hover:text-primary transition-colors duration-200"
+              className="hover:text-primary transition-colors duration-200"
             >
               About Us
             </button>
-            <span className="text-muted-foreground">•</span>
+            <span>•</span>
             <button
               onClick={onShowContactUs}
-              className="text-muted-foreground hover:text-primary transition-colors duration-200"
+              className="hover:text-primary transition-colors duration-200"
             >
               Contact Us
             </button>
-            <span className="text-muted-foreground">•</span>
+            <span>•</span>
             <button
               onClick={onShowFAQ}
-              className="text-muted-foreground hover:text-primary transition-colors duration-200"
+              className="hover:text-primary transition-colors duration-200"
             >
               FAQ
             </button>

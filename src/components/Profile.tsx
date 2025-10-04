@@ -299,7 +299,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
     
     if (user.verificationSubmitted) {
       return (
-        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+        <div className="flex items-center gap-2 text-primary">
           <Clock className="w-5 h-5" />
           <span className="font-medium">Verification Submitted</span>
         </div>
@@ -321,13 +321,13 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
 
       {/* Storage Warning */}
       {storageWarning && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <AlertCircle className="w-5 h-5 text-primary" />
               <div>
-                <p className="font-medium text-amber-800">Storage Nearly Full</p>
-                <p className="text-sm text-amber-700">
+                <p className="font-medium text-primary">Storage Nearly Full</p>
+                <p className="text-sm text-primary/80">
                   Your browser storage may be getting full. This can cause issues saving profile changes.
                 </p>
               </div>
@@ -337,7 +337,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
                 size="sm" 
                 variant="outline"
                 onClick={() => console.log('Storage management not needed with Supabase')}
-                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                className="border-primary/30 text-primary hover:bg-primary/10"
               >
                 <Database className="w-4 h-4 mr-2" />
                 Manage Storage
@@ -346,7 +346,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
                 size="sm" 
                 variant="ghost"
                 onClick={() => setStorageWarning(false)}
-                className="text-amber-700"
+                className="text-primary"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -841,7 +841,7 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
                   </Button>
                 </div>
                 
-                <div className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg p-3">
                   <strong>💡 Business Focus:</strong> Your profile is for account management. 
                   Use your storefront to showcase products, business information, and connect with customers.
                 </div>

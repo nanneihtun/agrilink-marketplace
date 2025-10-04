@@ -48,7 +48,7 @@ function TooltipContent({
     if (!className) return "bg-primary fill-primary";
     
     if (className.includes("bg-green-700")) return "bg-green-700 fill-green-700";
-    if (className.includes("bg-amber-700")) return "bg-amber-700 fill-amber-700";
+    if (className.includes("bg-primary")) return "bg-primary fill-primary";
     if (className.includes("bg-yellow-700")) return "bg-yellow-700 fill-yellow-700";
     
     return "bg-primary fill-primary";

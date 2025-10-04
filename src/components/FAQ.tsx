@@ -119,7 +119,7 @@ const faqCategories = [
     id: "badges",
     title: "Badges & Trust System",
     icon: Shield,
-    color: "bg-amber-100 text-amber-700",
+    color: "bg-primary/10 text-primary",
     questions: [
       {
         question: "What do the different user type badges mean?",

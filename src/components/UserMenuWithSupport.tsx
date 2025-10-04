@@ -153,7 +153,7 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
                   )}
                   
                   {user.verificationStatus === 'under_review' && (
-                    <div className="flex items-center justify-center gap-1 text-sm text-amber-600">
+                    <div className="flex items-center justify-center gap-1 text-sm text-primary">
                       <AlertCircle className="w-4 h-4" />
                       Verification Under Review
                     </div>

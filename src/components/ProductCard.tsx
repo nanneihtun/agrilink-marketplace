@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, memo } from "react";
 import { Badge } from "./ui/badge";
 import { UserBadge, PublicVerificationStatus, AccountTypeBadge, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Button } from "./ui/button";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter } from "./ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { MapPin, MessageCircle, Store, Package, Shield, Clock, Trash2, CheckCircle, Camera, Sprout, Heart } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { OptimizedImage } from "./OptimizedImage";
 import { getRelativeTime } from "../utils/dates";
 import { OfferModal } from "./OfferModal";
 import { analyticsAPI } from "../services/analytics";
@@ -69,7 +70,7 @@ function getDynamicSellerInfo(sellerId: string, currentUserId?: string, productL
   return null;
 }
 
-export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, onDelete, onSaveProduct, currentUserId, currentUserType, sellerVerified = false, sellerVerificationStatus, adminMode = false, savedProductIds = [] }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, onChat, onViewDetails, onViewStorefront, onDelete, onSaveProduct, currentUserId, currentUserType, sellerVerified = false, sellerVerificationStatus, adminMode = false, savedProductIds = [] }: ProductCardProps) {
   // Check if current user is the seller of this product
   const isOwnProduct = currentUserId && product.sellerId === currentUserId;
   
@@ -83,7 +84,9 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
       
       try {
         await analyticsAPI.trackProductView(product.id, currentUserId);
-        console.log('📊 Product view tracked for:', product.name);
+        if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+          console.log('📊 Product view tracked for:', product.name);
+        }
       } catch (error) {
         console.error('❌ Error tracking product view:', error);
       }
@@ -131,12 +134,23 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
       <CardContent className="p-3">
         <div className="relative mb-2">
           {/* Main Product Image */}
-          <ImageWithFallback
-            src={product.images?.[0] || product.image}
-            alt={product.name}
-            className="w-full h-48 object-cover rounded-lg cursor-pointer"
-            onClick={() => onViewDetails(product.id)}
-          />
+          <div onClick={() => onViewDetails(product.id)}>
+            <OptimizedImage
+              src={product.images?.[0] || product.image}
+              alt={product.name}
+              className="w-full h-48 rounded-lg cursor-pointer"
+              fallbackSrc="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop"
+              lazy={true}
+              quality={75}
+              width={400}
+              height={192}
+              onLoad={() => {
+                if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+                  console.log('Product image loaded:', product.name);
+                }
+              }}
+            />
+          </div>
           
           {/* Account type badge in top-right corner */}
           <div className="absolute top-2 right-2">
@@ -262,4 +276,4 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
       </CardFooter>
     </Card>
   );
-}
+});
