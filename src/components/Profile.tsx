@@ -175,35 +175,17 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
         compressionRatio: (file.size / compressedDataUrl.length).toFixed(2)
       });
       
-      // Update the user profile first, then update local state
+      // Update the user profile in database, then update local state
       if (onUpdate) {
         try {
           await onUpdate({ profileImage: compressedDataUrl });
           // Only update local state after successful backend update
           setFormData(prev => ({ ...prev, profileImage: compressedDataUrl }));
-          console.log('✅ Profile image updated successfully');
+          console.log('✅ Profile image updated successfully in database');
         } catch (error) {
           console.error('Failed to save profile image:', error);
-          
-          // Show user-friendly error message with guidance
-          let errorMessage = 'Failed to save profile image. ';
-          
-          if (error instanceof Error) {
-            if (error.message.includes('Storage quota exceeded') || error.message.includes('storage is full')) {
-              errorMessage += 'Your browser storage is full. Please clear browser data or try a smaller image.';
-              setStorageWarning(true); // Show storage warning
-            } else {
-              errorMessage += error.message;
-            }
-          } else {
-            errorMessage += 'Please try with a smaller image or clear browser data.';
-            setStorageWarning(true); // Show storage warning as fallback
-          }
-          
-          alert(errorMessage);
-          
+          alert('Failed to save profile image. Please try again.');
           // Don't update local state if backend update failed
-          // formData will be synced with user prop via useEffect
         }
       } else {
         // If no onUpdate callback, update local state directly (fallback)
@@ -524,29 +506,30 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
               
 
               
-              {/* Verification Actions */}
-              <div className="space-y-3">
-                {/* View Verification Details - Show for all users */}
-                <Button 
-                  variant="outline" 
-                  className={`w-full h-11 font-medium ${(() => {
-                    // Get verification level to determine color
-                    const verificationLevel = getUserVerificationLevel(user);
-                    
-                    switch (verificationLevel) {
-                      case 'business-verified':
-                      case 'id-verified':
-                        return 'text-green-600 border-green-300 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20';
-                      case 'under-review':
-                        return 'text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/20';
-                      case 'phone-verified':
-                        return 'text-yellow-600 border-yellow-300 hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400 dark:border-yellow-700 dark:hover:bg-yellow-900/20';
-                      default: // unverified
-                        return 'text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20';
-                    }
-                  })()}`}
-                  onClick={() => onShowVerification(1)}
-                >
+              {/* Verification Actions - Only show for non-admin users */}
+              {user.userType !== 'admin' && (
+                <div className="space-y-3">
+                  {/* View Verification Details - Show for all non-admin users */}
+                  <Button 
+                    variant="outline" 
+                    className={`w-full h-11 font-medium ${(() => {
+                      // Get verification level to determine color
+                      const verificationLevel = getUserVerificationLevel(user);
+                      
+                      switch (verificationLevel) {
+                        case 'business-verified':
+                        case 'id-verified':
+                          return 'text-green-600 border-green-300 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20';
+                        case 'under-review':
+                          return 'text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/20';
+                        case 'phone-verified':
+                          return 'text-yellow-600 border-yellow-300 hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400 dark:border-yellow-700 dark:hover:bg-yellow-900/20';
+                        default: // unverified
+                          return 'text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20';
+                      }
+                    })()}`}
+                    onClick={() => onShowVerification(1)}
+                  >
                   {(() => {
                     // Get verification level to determine icon color
                     const verificationLevel = getUserVerificationLevel(user);
@@ -565,7 +548,8 @@ export function Profile({ user, onBack, onEditProfile, onShowVerification, onUpd
                   })()}
                   View Verification Details
                 </Button>
-              </div>
+                </div>
+              )}
             </CardHeader>
           </Card>
 

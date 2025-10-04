@@ -47,8 +47,15 @@ export const useProducts = () => {
       unit: backendProduct.unit,
       quantity: backendProduct.quantity,
       seller_name: backendProduct.seller_name,
+      users: backendProduct.users,
       fullBackendProduct: backendProduct
     })
+    
+    // Get verification status from joined users data
+    const userData = backendProduct.users;
+    const isVerified = userData?.verified || false;
+    const isBusinessVerified = userData?.verified && userData?.account_type === 'business';
+    const verificationStatus = userData?.verification_status || 'unverified';
     
     return {
       id: backendProduct.id,
@@ -79,7 +86,27 @@ export const useProducts = () => {
       description: backendProduct.description,
       additionalNotes: backendProduct.additional_notes,
       priceChange: backendProduct.price_change || 0,
-      lastUpdated: backendProduct.last_updated || new Date().toISOString()
+      lastUpdated: backendProduct.last_updated || new Date().toISOString(),
+      
+      // Verification status from joined users table
+      sellerVerified: isVerified,
+      sellerVerificationStatus: {
+        idVerified: isVerified,
+        businessVerified: isBusinessVerified,
+        verified: isVerified,
+        trustLevel: isBusinessVerified ? 'business-verified' : 
+                   isVerified ? 'id-verified' : 
+                   verificationStatus === 'under_review' ? 'under-review' : 'unverified',
+        tierLabel: isBusinessVerified ? 'Business Verified' : 
+                  isVerified ? 'Verified' : 
+                  verificationStatus === 'under_review' ? 'Under Review' : 'Unverified',
+        levelBadge: isBusinessVerified ? 'Tier 2' : 
+                   isVerified ? 'Tier 1' : 
+                   verificationStatus === 'under_review' ? 'Under Review' : 'Unverified',
+        level: isBusinessVerified ? 2 : isVerified ? 1 : 0,
+        userType: backendProduct.seller_type,
+        accountType: userData?.account_type
+      }
     }
   }
 

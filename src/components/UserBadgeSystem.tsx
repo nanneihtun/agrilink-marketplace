@@ -235,14 +235,8 @@ export function PublicVerificationStatus({
   size = 'xs',
   className 
 }: PublicVerificationStatusProps) {
-  // Only show verification badge for fully verified users
-  const isFullyVerified = verificationLevel === 'id-verified' || verificationLevel === 'business-verified';
-  
-  if (!isFullyVerified) {
-    return null; // No badge shown for partial or unverified status
-  }
-  
-  const verificationConfig = VERIFICATION_LEVELS[verificationLevel];
+  // Show verification badge for all users - but with different styling
+  const verificationConfig = VERIFICATION_LEVELS[verificationLevel] || VERIFICATION_LEVELS.unverified;
   
   const sizeClasses = {
     xs: 'text-xs px-1.5 py-0.5',

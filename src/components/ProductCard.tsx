@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Badge } from "./ui/badge";
 import { UserBadge, PublicVerificationStatus, AccountTypeBadge, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Button } from "./ui/button";
@@ -8,6 +8,7 @@ import { MapPin, MessageCircle, Store, Package, Shield, Clock, Trash2, CheckCirc
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getRelativeTime } from "../utils/dates";
 import { OfferModal } from "./OfferModal";
+import { analyticsAPI } from "../services/analytics";
 
 import type { Product } from "../data/products";
 
@@ -74,6 +75,22 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
   
   // Check if product is saved by current user
   const isSaved = savedProductIds.includes(product.id);
+
+  // Track product view when component mounts
+  useEffect(() => {
+    const trackProductView = async () => {
+      if (isOwnProduct) return; // Don't track own product views
+      
+      try {
+        await analyticsAPI.trackProductView(product.id, currentUserId);
+        console.log('📊 Product view tracked for:', product.name);
+      } catch (error) {
+        console.error('❌ Error tracking product view:', error);
+      }
+    };
+
+    trackProductView();
+  }, [product.id, currentUserId, isOwnProduct]);
   
   // Get current price for saving
   const getCurrentPrice = () => {
@@ -117,7 +134,7 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
           <ImageWithFallback
             src={product.images?.[0] || product.image}
             alt={product.name}
-            className="w-full aspect-[3/2] object-cover rounded-lg cursor-pointer"
+            className="w-full h-48 object-cover rounded-lg cursor-pointer"
             onClick={() => onViewDetails(product.id)}
           />
           
@@ -125,7 +142,7 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
           <div className="absolute top-2 right-2">
             <AccountTypeBadge 
               userType={product.sellerType}
-              accountType="individual"
+              accountType={product.sellerVerificationStatus?.accountType || "individual"}
               size="sm"
             />
           </div>
@@ -203,16 +220,9 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
             >
               {displaySellerName}
             </button>
-            {/* Show verification status beside seller name - Public display (only shows if fully verified) */}
+            {/* Show verification status beside seller name - Public display (shows all statuses) */}
             <PublicVerificationStatus 
-              verificationLevel={sellerVerificationStatus ? 
-                (() => {
-                  if (sellerVerificationStatus.level === 2) return 'business-verified';
-                  if (sellerVerificationStatus.level === 1) return 'id-verified';
-                  if (sellerVerificationStatus.trustLevel === 'under-review') return 'under-review';
-                  return 'unverified';
-                })() : 'unverified'
-              }
+              verificationLevel={product.sellerVerificationStatus?.trustLevel || 'unverified'}
               size="xs"
             />
           </div>
@@ -246,7 +256,7 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
             onClick={() => onChat(product.id)}
           >
             <MessageCircle className="w-3 h-3 mr-1" />
-            Chat
+            {currentUserId ? 'Chat' : 'Sign in to chat'}
           </Button>
         )}
       </CardFooter>

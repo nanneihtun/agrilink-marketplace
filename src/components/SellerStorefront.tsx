@@ -8,6 +8,7 @@ import { Badge } from "./ui/badge";
 import { UserBadge, PublicVerificationStatus, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Separator } from "./ui/separator";
 import { ReviewsService, type SellerStats } from "../services/reviews";
+import { analyticsAPI } from "../services/analytics";
 import { 
   ChevronLeft, 
   MapPin, 
@@ -82,11 +83,13 @@ interface SellerStorefrontProps {
   onBack: () => void;
   onViewProduct: (productId: string) => void;
   onChat: (productId: string) => void;
+  onEditProduct?: (productId: string) => void;
   isOwnStorefront?: boolean;
   onEditStorefrontImage?: () => void;
   onUpdateStorefront?: (updates: any) => Promise<void>;
   previewMode?: boolean;
   onTogglePreviewMode?: (mode: boolean) => void;
+  currentUser?: any;
 }
 
 export function SellerStorefront({ 
@@ -95,11 +98,13 @@ export function SellerStorefront({
   onBack, 
   onViewProduct, 
   onChat,
+  onEditProduct,
   isOwnStorefront = false,
   onEditStorefrontImage,
   onUpdateStorefront,
   previewMode = false,
-  onTogglePreviewMode
+  onTogglePreviewMode,
+  currentUser
 }: SellerStorefrontProps) {
   // Editing states
   const [editing, setEditing] = useState<{
@@ -114,7 +119,7 @@ export function SellerStorefront({
   // Storefront data state - directly use seller prop data
   const [storefrontData, setStorefrontData] = useState(() => ({
     description: seller.description || '',
-    businessHours: (seller as any).businessHours || '9 AM - 6 PM, Mon-Sat',
+    businessHours: (seller as any).businessHours || '',
     phone: (seller as any).phone || '',
     email: (seller as any).email || '',
     website: (seller as any).website || '',
@@ -129,6 +134,22 @@ export function SellerStorefront({
       payment: ''
     }
   }));
+
+  // Track profile view when component mounts
+  useEffect(() => {
+    const trackProfileView = async () => {
+      if (!seller.id || isOwnStorefront) return; // Don't track own profile views
+      
+      try {
+        await analyticsAPI.trackProfileView(seller.id, currentUser?.id);
+        console.log('📊 Profile view tracked for:', seller.name);
+      } catch (error) {
+        console.error('❌ Error tracking profile view:', error);
+      }
+    };
+
+    trackProfileView();
+  }, [seller.id, isOwnStorefront, currentUser?.id]);
 
   // Fetch seller statistics
   useEffect(() => {
@@ -155,7 +176,7 @@ export function SellerStorefront({
   useEffect(() => {
     const newStorefrontData = {
       description: seller.description || '',
-      businessHours: (seller as any).businessHours || '9 AM - 6 PM, Mon-Sat',
+      businessHours: (seller as any).businessHours || '',
       phone: (seller as any).phone || '',
       email: (seller as any).email || '',
       website: (seller as any).website || '',
@@ -333,11 +354,6 @@ export function SellerStorefront({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-semibold">{seller.name}</h2>
-                    {/* Public verification status - only shows green badge for fully verified */}
-                    <PublicVerificationStatus 
-                      verificationLevel={getUserVerificationLevel(seller)}
-                      size="sm"
-                    />
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -420,7 +436,9 @@ export function SellerStorefront({
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{storefrontData.businessHours}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {storefrontData.businessHours || (isOwnStorefront && !previewMode ? 'Add your business hours' : 'Business hours not specified')}
+                    </p>
                   )}
                 </div>
 
@@ -1224,7 +1242,11 @@ export function SellerStorefront({
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {products.map((product) => (
-                    <Card key={product.id} className="hover:shadow-md transition-shadow border-primary/30">
+                    <Card 
+                      key={product.id} 
+                      className="hover:shadow-md transition-shadow border-primary/30 cursor-pointer"
+                      onClick={() => onViewProduct(product.id)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex gap-4">
                           <img 
@@ -1264,27 +1286,38 @@ export function SellerStorefront({
                               </span>
                             </div>
 
-                            <div className="flex gap-2">
+                            {/* Chat button for non-owners */}
+                            {!isOwnStorefront && (
                               <Button 
                                 size="sm" 
-                                className={`h-9 px-3 py-2 ${!isOwnStorefront ? "flex-1" : "w-full"}`}
-                                onClick={() => onViewProduct(product.id)}
+                                variant="outline"
+                                className="w-full h-8 text-xs mt-2"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent card click
+                                  onChat(product.id);
+                                }}
                               >
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
+                                <MessageCircle className="w-3 h-3 mr-1" />
+                                {currentUser ? 'Chat with seller' : 'Sign in to chat'}
                               </Button>
-                              {!isOwnStorefront && (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  className="flex-1 h-9 px-3 py-2"
-                                  onClick={() => onChat(product.id)}
-                                >
-                                  <MessageCircle className="w-4 h-4 mr-2" />
-                                  Chat
-                                </Button>
-                              )}
-                            </div>
+                            )}
+
+                            {/* Edit button for storefront owner (not in preview mode) */}
+                            {isOwnStorefront && !previewMode && onEditProduct && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="w-full h-8 text-xs mt-2"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent card click
+                                  onEditProduct(product.id);
+                                }}
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Edit Product
+                              </Button>
+                            )}
+
                           </div>
                         </div>
                       </CardContent>

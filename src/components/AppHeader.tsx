@@ -48,7 +48,7 @@ export function AppHeader({
             <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-lg flex items-center justify-center shadow-md">
               <Leaf className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
             </div>
-            <div>
+            <div className="text-left">
               <h1 className="text-lg md:text-xl font-semibold">
                 AgriLink
               </h1>
@@ -107,7 +107,7 @@ export function AppHeader({
                   {currentUser.userType === "admin" && (
                     <Button
                       variant={
-                        currentView === "marketplace"
+                        currentView === "dashboard"
                           ? "default"
                           : "ghost"
                       }

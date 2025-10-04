@@ -24,6 +24,20 @@ export interface Product {
   priceChange?: number; // Percentage change in price from last week
   lastUpdated: string;
   isEditing?: boolean;
+  
+  // Verification status fields
+  sellerVerified?: boolean;
+  sellerVerificationStatus?: {
+    idVerified: boolean;
+    businessVerified: boolean;
+    verified: boolean;
+    trustLevel: 'unverified' | 'under-review' | 'id-verified' | 'business-verified';
+    tierLabel: string;
+    levelBadge: string;
+    level: number;
+    userType?: string;
+    accountType?: string;
+  };
 }
 
 // Empty products array - users will create their own products

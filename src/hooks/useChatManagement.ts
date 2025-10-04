@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import type { Product } from "../data/products";
+import { analyticsAPI } from "../services/analytics";
 
 interface UseChatManagementProps {
   currentUser: any;
   allProducts: Product[];
   startConversation: (buyerId: string, sellerId: string, productId: string) => Promise<void>;
   setSelectedChat: (id: string | null) => void;
-  setAuthModal: (modal: "login" | "register" | null) => void;
+  setCurrentView: (view: string) => void;
 }
 
 export function useChatManagement({
@@ -15,13 +16,14 @@ export function useChatManagement({
   allProducts,
   startConversation,
   setSelectedChat,
-  setAuthModal,
+  setCurrentView,
 }: UseChatManagementProps) {
 
   const handleChat = useCallback(
     async (productId: string) => {
       if (!currentUser) {
-        setAuthModal("login");
+        // Simple redirect to login page
+        setCurrentView("login");
         return;
       }
 
@@ -32,6 +34,15 @@ export function useChatManagement({
           (p) => p.id === productId,
         );
         if (product) {
+          // Track inquiry before starting conversation
+          try {
+            await analyticsAPI.trackInquiry(productId, currentUser.id, product.sellerId, 'chat');
+            console.log('📊 Inquiry tracked for product:', product.name);
+          } catch (trackingError) {
+            console.error('❌ Error tracking inquiry:', trackingError);
+            // Don't block the chat if tracking fails
+          }
+
           await startConversation(currentUser.id, product.sellerId, productId);
           setSelectedChat(productId);
         }
@@ -47,7 +58,7 @@ export function useChatManagement({
         }
       }
     },
-    [currentUser, allProducts, startConversation, setSelectedChat, setAuthModal],
+    [currentUser, allProducts, startConversation, setSelectedChat, setCurrentView],
   );
 
   return {

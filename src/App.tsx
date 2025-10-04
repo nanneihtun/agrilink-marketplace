@@ -40,12 +40,14 @@ import { MarketplaceHero } from "./components/MarketplaceHero";
 import { UserMenu } from "./components/UserMenuWithSupport";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Pagination } from "./components/Pagination";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 
 // Product type import
 import type { Product } from "./data/products";
 import { generatePriceComparisonData } from "./utils/priceComparison";
+import { usePagination } from "./hooks/usePagination";
 import {
   useProductFiltering,
   FilterState,
@@ -198,6 +200,8 @@ export default function App() {
   // Only initialize chat hook when user is authenticated
   const { startConversation } = useChat();
   
+  // User cache for verification status - removed to fix white screen
+  
   // No localStorage persistence needed with Supabase
 
   // No localStorage persistence needed with Supabase
@@ -263,7 +267,7 @@ export default function App() {
     allProducts,
     startConversation,
     setSelectedChat,
-    setAuthModal,
+    setCurrentView,
   });
 
   // Set initial view - always start with marketplace for better UX
@@ -306,6 +310,18 @@ export default function App() {
   // Use custom hook for filtering
   const filteringResult = useProductFiltering(allProducts, filters, isSellerVerified);
   const { filteredProducts, getActiveFiltersCount } = filteringResult || { filteredProducts: allProducts, getActiveFiltersCount: () => 0 };
+
+  // Add pagination to filtered products
+  const pagination = usePagination({
+    items: filteredProducts,
+    itemsPerPage: 12,
+    initialPage: 1
+  });
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    pagination.resetToFirstPage();
+  }, [filters, pagination.resetToFirstPage]);
 
   // Memoized selectors with null checks - optimized dependencies
   const selectedProduct = useMemo(
@@ -410,22 +426,44 @@ export default function App() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !currentUser) return;
 
-      try {
-        // Use URL.createObjectURL for image upload
-        const imageUrl = URL.createObjectURL(file);
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image size must be less than 10MB');
+        return;
+      }
 
-        // Update user profile with new storefront image
-        await handleUpdateUser({
-          ...currentUser,
-          storefrontImage: imageUrl,
+      try {
+        // Convert image to base64 for permanent storage
+        const reader = new FileReader();
+        const base64DataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
         });
 
-        console.log("Storefront image updated successfully");
+        console.log('Storefront image converted to base64:', {
+          originalSize: file.size,
+          base64Size: base64DataUrl.length,
+          compressionRatio: (file.size / base64DataUrl.length).toFixed(2)
+        });
+
+        // Update user profile with new storefront image (base64)
+        await handleUpdateUser({
+          ...currentUser,
+          storefrontImage: base64DataUrl,
+        });
+
+        toast.success("Storefront image updated successfully!");
+        console.log("✅ Storefront image updated successfully in database");
       } catch (error) {
-        console.error(
-          "Failed to update storefront image:",
-          error,
-        );
+        console.error("❌ Failed to update storefront image:", error);
+        toast.error("Failed to update storefront image. Please try again.");
       }
     };
     input.click();
@@ -816,13 +854,19 @@ export default function App() {
                           <div className="bg-gray-200 rounded-lg h-64"></div>
                         </div>
                       ))
-                    ) : filteredProducts.length > 0 ? (
-                      filteredProducts.map((product) => {
-                      const verificationStatus =
-                        getSellerVerificationStatus(
-                          product.sellerId,
-                          currentUser,
-                        );
+                    ) : pagination.currentItems.length > 0 ? (
+                      pagination.currentItems.map((product) => {
+                      const verificationStatus = product.sellerVerificationStatus || {
+                        idVerified: false,
+                        businessVerified: false,
+                        verified: false,
+                        trustLevel: 'unverified' as const,
+                        tierLabel: 'Unverified',
+                        levelBadge: 'Unverified',
+                        level: 0,
+                        userType: product.sellerType,
+                        accountType: 'individual'
+                      };
                       return (
                         <ProductCard
                           key={product.id}
@@ -885,6 +929,23 @@ export default function App() {
                     )}
                   </div>
 
+                  {/* Pagination */}
+                  {!productsLoading && filteredProducts.length > 0 && (
+                    <div className="mt-8">
+                      <Pagination
+                        currentPage={pagination.currentPage}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.totalItems}
+                        itemsPerPage={pagination.itemsPerPage}
+                        onPageChange={pagination.goToPage}
+                        onItemsPerPageChange={pagination.setItemsPerPage}
+                        itemsPerPageOptions={[6, 12, 24, 48]}
+                        showItemsPerPageSelector={true}
+                        className="border-t pt-6"
+                      />
+                    </div>
+                  )}
+
                 </section>
               </div>
             )}
@@ -892,11 +953,17 @@ export default function App() {
             {currentView === "product-details" &&
               productToView &&
               (() => {
-                const productSellerVerificationStatus =
-                  getSellerVerificationStatus(
-                    productToView.sellerId,
-                    currentUser,
-                  );
+                const productSellerVerificationStatus = productToView.sellerVerificationStatus || {
+                  idVerified: false,
+                  businessVerified: false,
+                  verified: false,
+                  trustLevel: 'unverified' as const,
+                  tierLabel: 'Unverified',
+                  levelBadge: 'Unverified',
+                  level: 0,
+                  userType: productToView.sellerType,
+                  accountType: 'individual'
+                };
 
                 // Get seller profile data - simplified without demo account lookup
                 let sellerProfile: any = null;
@@ -1084,9 +1151,21 @@ export default function App() {
                     onBack={navigation.handleBackToPrevious}
                     onViewProduct={navigation.handleViewDetails}
                     onChat={chatManagement.handleChat}
+                    onEditProduct={
+                      selectedSellerId === currentUser?.id
+                        ? (productId: string) => {
+                            const product = allProducts.find(p => p.id === productId);
+                            if (product) {
+                              setEditingProduct(product);
+                              setCurrentView("add-listing");
+                            }
+                          }
+                        : undefined
+                    }
                     isOwnStorefront={
                       selectedSellerId === currentUser?.id
                     }
+                    currentUser={currentUser}
                     onEditStorefrontImage={
                       selectedSellerId === currentUser?.id
                         ? handleEditStorefrontImage
@@ -1120,11 +1199,17 @@ export default function App() {
                 : null; // TODO: Look up seller from Supabase
 
             // Get seller's verification status for chat warnings
-            const sellerVerificationStatus =
-              getSellerVerificationStatus(
-                selectedProduct.sellerId,
-                currentUser,
-              );
+            const sellerVerificationStatus = selectedProduct.sellerVerificationStatus || {
+              idVerified: false,
+              businessVerified: false,
+              verified: false,
+              trustLevel: 'unverified' as const,
+              tierLabel: 'Unverified',
+              levelBadge: 'Unverified',
+              level: 0,
+              userType: selectedProduct.sellerType,
+              accountType: 'individual'
+            };
 
             return (
               <>
@@ -1157,6 +1242,13 @@ export default function App() {
           })()}
 
         {/* Authentication Modals */}
+        {authModal === "login" && (
+          <Login
+            onLogin={handleLogin}
+            onSwitchToRegister={navigation.handleGoToRegister}
+            onClose={() => setAuthModal(null)}
+          />
+        )}
         {authModal === "register" && (
           <Register
             onRegister={handleRegister}
