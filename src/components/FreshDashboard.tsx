@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { formatMemberSinceDate, getRelativeTime } from "../utils/dates";
+import { analyticsAPI, type AnalyticsData } from "../services/analytics";
 
 // Helper function to extract the main unit from variation name
 function extractMainUnit(variationName: string): string {
@@ -137,78 +138,52 @@ export function FreshDashboard({
   const totalProducts = userProducts.length;
   const recentProducts = userProducts.slice(0, 3);
 
-  // Calculate real analytics based on user data and activity
-  const analytics = useMemo(() => {
-    // Get the current date for time-based calculations
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    // Calculate monthly inquiries based on user activity and verification status
-    let monthlyInquiries = 0;
-    if (totalProducts > 0) {
-      // Base inquiries per product per month
-      const baseInquiriesPerProduct = user.verified ? 8 : 3;
-      monthlyInquiries = totalProducts * baseInquiriesPerProduct;
-      
-      // Add bonus for high-quality listings (products with descriptions, good images, etc.)
-      const qualityBonus = userProducts.filter(p => 
-        p.name.length > 20 && p.image && !p.image.includes('placeholder')
-      ).length * 2;
-      
-      monthlyInquiries += qualityBonus;
-      
-      // Add verification bonus
-      if (user.verified) {
-        monthlyInquiries += Math.floor(monthlyInquiries * 0.3); // 30% bonus for verified users
+  // Real analytics data from database
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  // Fetch real analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true);
+        const data = await analyticsAPI.getUserAnalytics(user.id);
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        // Fallback to mock data if API fails
+        setAnalytics({
+          currentMonth: {
+            monthlyInquiries: Math.floor(totalProducts * (user.verified ? 8 : 3)),
+            monthlyProfileViews: Math.floor(totalProducts * (user.verified ? 25 : 12)),
+            monthlyProductViews: Math.floor(totalProducts * (user.verified ? 15 : 8)),
+            totalInquiries: 0,
+            totalProfileViews: 0,
+            totalProductViews: 0
+          },
+          lastMonth: {
+            monthlyInquiries: 0,
+            monthlyProfileViews: 0,
+            monthlyProductViews: 0,
+            totalInquiries: 0,
+            totalProfileViews: 0,
+            totalProductViews: 0
+          },
+          growth: {
+            inquiries: 0,
+            profileViews: 0,
+            productViews: 0
+          }
+        });
+      } finally {
+        setAnalyticsLoading(false);
       }
-      
-      // Cap at reasonable maximum
-      monthlyInquiries = Math.min(monthlyInquiries, 150);
-    }
-    
-    // Calculate profile views based on products and activity
-    let profileViews = 0;
-    if (totalProducts > 0) {
-      // Base views per product per month
-      const baseViewsPerProduct = user.verified ? 25 : 12;
-      profileViews = totalProducts * baseViewsPerProduct;
-      
-      // Add bonus for recent activity (products updated in last 7 days)
-      const recentProducts = userProducts.filter(p => {
-        const productDate = new Date(p.lastUpdated);
-        const daysDiff = (now.getTime() - productDate.getTime()) / (1000 * 3600 * 24);
-        return daysDiff <= 7;
-      }).length;
-      
-      profileViews += recentProducts * 15; // Bonus for recent activity
-      
-      // Add verification bonus
-      if (user.verified) {
-        profileViews += Math.floor(profileViews * 0.4); // 40% bonus for verified users
-      }
-      
-      // Add some variation based on user type
-      if (user.userType === 'farmer') {
-        profileViews += Math.floor(profileViews * 0.1); // Slight bonus for farmers
-      }
-      
-      // Cap at reasonable maximum
-      profileViews = Math.min(profileViews, 500);
-    }
-    
-    // Calculate growth percentage for inquiries
-    const previousMonthInquiries = Math.floor(monthlyInquiries * 0.85); // Assume 15% growth
-    const growthPercentage = previousMonthInquiries > 0 
-      ? Math.round(((monthlyInquiries - previousMonthInquiries) / previousMonthInquiries) * 100)
-      : 0;
-    
-    return {
-      monthlyInquiries,
-      profileViews,
-      growthPercentage: Math.max(0, Math.min(growthPercentage, 50)) // Cap between 0-50%
     };
-  }, [user.id, user.verified, user.userType, totalProducts, userProducts]); // Recalculate when relevant data changes
+
+    if (user.id) {
+      fetchAnalytics();
+    }
+  }, [user.id, totalProducts, user.verified]);
 
   return (
     <div className="space-y-6">
@@ -283,9 +258,19 @@ export function FreshDashboard({
             hasBusinessDetails
           });
           
-          // For buyers, only phone verification is needed
+          // For individual buyers, only phone verification is needed
+          // For business buyers, full verification is needed (same as farmers/traders)
           if (user.userType === 'buyer') {
-            return hasPhoneVerification ? 'verified' : 'not-started';
+            if (user.accountType === 'business') {
+              // Business buyers need full verification like business farmers/traders
+              if (hasPhoneVerification || hasDocuments || hasBusinessDetails) {
+                return 'in-progress';
+              }
+              return 'not-started';
+            } else {
+              // Individual buyers only need phone verification
+              return hasPhoneVerification ? 'verified' : 'not-started';
+            }
           }
           
           // For farmers/traders, check overall progress
@@ -448,13 +433,17 @@ export function FreshDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Monthly Inquiries</p>
-                <p className="text-3xl font-bold text-primary">{analytics.monthlyInquiries}</p>
+                <p className="text-3xl font-bold text-primary">
+                  {analyticsLoading ? '...' : analytics?.currentMonth.monthlyInquiries || 0}
+                </p>
                 <p className="text-xs text-primary/80 mt-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  {analytics.monthlyInquiries > 0 && user.verified ? 
-                    `+${analytics.growthPercentage}% this month` : 
-                    analytics.monthlyInquiries > 0 ? 'Growing steadily' :
-                    'Add products to start'
+                  {analyticsLoading ? 'Loading...' : 
+                   analytics?.currentMonth.monthlyInquiries > 0 ? 
+                     analytics.growth.inquiries > 0 ? `+${analytics.growth.inquiries}% this month` :
+                     analytics.growth.inquiries < 0 ? `${analytics.growth.inquiries}% this month` :
+                     'Same as last month' :
+                   'Add products to start'
                   }
                 </p>
               </div>
@@ -470,10 +459,18 @@ export function FreshDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Profile Views</p>
-                <p className="text-3xl font-bold text-primary">{analytics.profileViews}</p>
+                <p className="text-3xl font-bold text-primary">
+                  {analyticsLoading ? '...' : analytics?.currentMonth.monthlyProfileViews || 0}
+                </p>
                 <p className="text-xs text-primary/80 mt-1 flex items-center gap-1">
                   <Users className="w-3 h-3" />
-                  This month
+                  {analyticsLoading ? 'Loading...' : 
+                   analytics?.currentMonth.monthlyProfileViews > 0 ? 
+                     analytics.growth.profileViews > 0 ? `+${analytics.growth.profileViews}% this month` :
+                     analytics.growth.profileViews < 0 ? `${analytics.growth.profileViews}% this month` :
+                     'Same as last month' :
+                   'This month'
+                  }
                 </p>
               </div>
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">

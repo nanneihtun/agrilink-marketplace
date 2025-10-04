@@ -64,8 +64,8 @@ export function AppFooter({
               </span>
             </div>
             <p className="text-xs md:text-sm text-muted-foreground">
-              Quality sourcing • Efficient distribution •
-              Network growth
+              Fresh products • Direct from source • 
+              Transparent pricing
             </p>
           </div>
         </div>
@@ -75,7 +75,7 @@ export function AppFooter({
       <div className="border-t"></div>
 
       {/* Footer Links */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="w-full max-w-5xl mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Project Information */}
           <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">

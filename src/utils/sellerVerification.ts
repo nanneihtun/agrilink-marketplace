@@ -39,7 +39,8 @@ export function getSellerVerificationStatus(sellerId: string, currentUser?: any)
     };
   }
   
-  // Check localStorage for other users
+  
+  // Check localStorage for other users as fallback
   try {
     const users = JSON.parse(localStorage.getItem('agriconnect-myanmar-users') || '[]');
     const seller = users.find((user: any) => user.id === sellerId);
@@ -68,10 +69,10 @@ export function getSellerVerificationStatus(sellerId: string, currentUser?: any)
       };
     }
   } catch (error) {
-    console.error('Error checking seller verification status:', error);
+    console.error('Error checking seller verification status in localStorage:', error);
   }
   
-  // Default unverified status
+  // Default unverified status - will be updated when user cache is populated
   return {
     idVerified: false,
     businessVerified: false,

@@ -141,38 +141,32 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
                 verificationLevel={getUserVerificationLevel(user)}
                 size="sm"
               />
-              {/* Verification Status */}
-              <div className="mt-2">
-                {/* For admins, show admin status */}
-                {user.userType === 'admin' && (
-                  <div className="flex items-center justify-center gap-1 text-sm text-primary">
-                    <Shield className="w-4 h-4" />
-                    Platform Administrator
-                  </div>
-                )}
-
-                {/* For all non-admin users, show unified verification status */}
-                {user.userType !== 'admin' && user.verified && (
-                  <div className="flex items-center justify-center gap-1 text-sm text-green-600">
-                    <Shield className="w-4 h-4" />
-                    Verified Account
-                  </div>
-                )}
-                
-                {user.userType !== 'admin' && user.verificationStatus === 'under_review' && (
-                  <div className="flex items-center justify-center gap-1 text-sm text-amber-600">
-                    <AlertCircle className="w-4 h-4" />
-                    Verification Under Review
-                  </div>
-                )}
-                
-                {user.userType !== 'admin' && !user.verified && user.verificationStatus !== 'under_review' && (
-                  <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                    <Shield className="w-4 h-4" />
-                    Verification Available
-                  </div>
-                )}
-              </div>
+              {/* Verification Status - Only show for non-admin users */}
+              {user.userType !== 'admin' && (
+                <div className="mt-2">
+                  {/* For all non-admin users, show unified verification status */}
+                  {user.verified && (
+                    <div className="flex items-center justify-center gap-1 text-sm text-green-600">
+                      <Shield className="w-4 h-4" />
+                      Verified Account
+                    </div>
+                  )}
+                  
+                  {user.verificationStatus === 'under_review' && (
+                    <div className="flex items-center justify-center gap-1 text-sm text-amber-600">
+                      <AlertCircle className="w-4 h-4" />
+                      Verification Under Review
+                    </div>
+                  )}
+                  
+                  {!user.verified && user.verificationStatus !== 'under_review' && (
+                    <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                      <Shield className="w-4 h-4" />
+                      Verification Available
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Contact Information */}
@@ -288,52 +282,58 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
                 </Button>
               )}
               
-              <Button 
-                variant="outline" 
-                className="w-full justify-start gap-2"
-                onClick={() => {
-                  setShowProfile(false);
-                  onViewMessages?.();
-                }}
-              >
-                <MessageSquare className="w-4 h-4" />
-                Messages
-              </Button>
+              {/* Messages button - Only show for non-admin users (user-to-user chat) */}
+              {user.userType !== 'admin' && (
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setShowProfile(false);
+                    onViewMessages?.();
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Messages
+                </Button>
+              )}
               
-              <Button 
-                variant="outline" 
-                className="w-full justify-start gap-2"
-                onClick={() => {
-                  setShowProfile(false);
-                  onShowVerification?.();
-                }}
-              >
-                <Shield className={`w-4 h-4 ${getVerificationStatus(user).color}`} />
-                {user.verified ? 'Verification Status' : 
-                 user.verificationStatus === 'under_review' ? 'Verification' :
-                 user.verificationSubmitted ? 'Verification Status' : 'Get Verified'}
-                
-                {getVerificationStatus(user).status === 'under-review' && (
-                  <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
-                    {user.verificationStatus === 'under_review' || user.verificationSubmitted ? 'Under Review' : 'Reviewing'}
-                  </Badge>
-                )}
-                {getVerificationStatus(user).status === 'verified' && (
-                  <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
-                    Verified
-                  </Badge>
-                )}
-                {getVerificationStatus(user).status === 'in-progress' && (
-                  <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
-                    Phone Verified
-                  </Badge>
-                )}
-                {getVerificationStatus(user).status === 'not-started' && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    Available
-                  </Badge>
-                )}
-              </Button>
+              {/* Verification button - Only show for non-admin users */}
+              {user.userType !== 'admin' && (
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setShowProfile(false);
+                    onShowVerification?.();
+                  }}
+                >
+                  <Shield className={`w-4 h-4 ${getVerificationStatus(user).color}`} />
+                  {user.verified ? 'Verification Status' : 
+                   user.verificationStatus === 'under_review' ? 'Verification' :
+                   user.verificationSubmitted ? 'Verification Status' : 'Get Verified'}
+                  
+                  {getVerificationStatus(user).status === 'under-review' && (
+                    <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
+                      {user.verificationStatus === 'under_review' || user.verificationSubmitted ? 'Under Review' : 'Reviewing'}
+                    </Badge>
+                  )}
+                  {getVerificationStatus(user).status === 'verified' && (
+                    <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
+                      Verified
+                    </Badge>
+                  )}
+                  {getVerificationStatus(user).status === 'in-progress' && (
+                    <Badge variant="secondary" className={`ml-auto text-xs ${getVerificationStatus(user).bgColor} ${getVerificationStatus(user).color} ${getVerificationStatus(user).borderColor}`}>
+                      Phone Verified
+                    </Badge>
+                  )}
+                  {getVerificationStatus(user).status === 'not-started' && (
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      Available
+                    </Badge>
+                  )}
+                </Button>
+              )}
               
 
               <Button variant="outline" className="w-full justify-start gap-2">
@@ -418,10 +418,13 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onViewProfile}>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
+          {/* Profile menu item - Only show for non-admin users */}
+          {user.userType !== 'admin' && (
+            <DropdownMenuItem onClick={onViewProfile}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </DropdownMenuItem>
+          )}
           {(user.userType === 'farmer' || user.userType === 'trader' || user.userType === 'buyer') && onGoToDashboard && (
             <DropdownMenuItem onClick={onGoToDashboard}>
               <BarChart3 className="mr-2 h-4 w-4" />
@@ -448,34 +451,40 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
           )}
 
 
-          <DropdownMenuItem onClick={onViewMessages}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            <span>Messages</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onShowVerification?.()}>
-            <Shield className={`mr-2 h-4 w-4 ${getVerificationStatus(user).color}`} />
-            <span>
-              {user.verified ? 'Verification Status' : 
-               user.verificationStatus === 'under_review' ? 'Verification' :
-               user.verificationSubmitted ? 'Verification Status' : 'Get Verified'}
-            </span>
-            {getVerificationStatus(user).status === 'under-review' && (
-              <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Under Review">
-              </div>
-            )}
-            {getVerificationStatus(user).status === 'verified' && (
-              <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Verified">
-              </div>
-            )}
-            {getVerificationStatus(user).status === 'in-progress' && (
-              <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Phone Verified - ID Verification Still Needed">
-              </div>
-            )}
-            {getVerificationStatus(user).status === 'not-started' && (
-              <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Verification Available">
-              </div>
-            )}
-          </DropdownMenuItem>
+          {/* Messages menu item - Only show for non-admin users (user-to-user chat) */}
+          {user.userType !== 'admin' && (
+            <DropdownMenuItem onClick={onViewMessages}>
+              <MessageSquare className="mr-2 h-4 w-4" />
+              <span>Messages</span>
+            </DropdownMenuItem>
+          )}
+          {/* Verification menu item - Only show for non-admin users */}
+          {user.userType !== 'admin' && (
+            <DropdownMenuItem onClick={() => onShowVerification?.()}>
+              <Shield className={`mr-2 h-4 w-4 ${getVerificationStatus(user).color}`} />
+              <span>
+                {user.verified ? 'Verification Status' : 
+                 user.verificationStatus === 'under_review' ? 'Verification' :
+                 user.verificationSubmitted ? 'Verification Status' : 'Get Verified'}
+              </span>
+              {getVerificationStatus(user).status === 'under-review' && (
+                <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Under Review">
+                </div>
+              )}
+              {getVerificationStatus(user).status === 'verified' && (
+                <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Verified">
+                </div>
+              )}
+              {getVerificationStatus(user).status === 'in-progress' && (
+                <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Phone Verified - ID Verification Still Needed">
+                </div>
+              )}
+              {getVerificationStatus(user).status === 'not-started' && (
+                <div className={`ml-auto w-2 h-2 rounded-full ${getVerificationStatus(user).dotColor}`} title="Verification Available">
+                </div>
+              )}
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onLogout}>

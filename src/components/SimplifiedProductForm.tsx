@@ -465,8 +465,14 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
     }
   }, [formData, validateForm, validationErrors, onSave, editingProduct, hasFormChanges]);
 
+  // Handle form submission with proper preventDefault
+  const handleFormSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSubmit();
+  }, [handleSubmit]);
+
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8">
+    <form onSubmit={handleFormSubmit} className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8">
       {/* Header */}
       <div className="space-y-4 mb-8">
         {/* Back button row */}
@@ -951,7 +957,7 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
           </Button>
           
           <Button 
-            onClick={handleSubmit} 
+            type="submit"
             disabled={isSubmitting || getUpdateButtonConfig().disabled}
             variant={getUpdateButtonConfig().variant}
             className={`h-11 flex-1 sm:flex-none sm:px-8 order-1 sm:order-2 min-h-11 ${
@@ -972,6 +978,6 @@ export function SimplifiedProductForm({ currentUser, onBack, onSave, editingProd
           </Button>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

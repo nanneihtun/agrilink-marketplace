@@ -56,7 +56,7 @@ export const useProductFiltering = (products: Product[], filters: FilterState, i
 
       // Category filtering
       const matchesCategory = !filters.category || filters.category === 'all' || 
-        product.name.toLowerCase().includes(filters.category.toLowerCase());
+        (product.category && product.category.toLowerCase().includes(filters.category.toLowerCase()));
 
       // Price range filtering
       let matchesPriceRange = true;

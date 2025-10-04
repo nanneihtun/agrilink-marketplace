@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Badge } from "./ui/badge";
 import { UserBadge, PublicVerificationStatus, AccountTypeBadge, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Button } from "./ui/button";
@@ -8,6 +8,7 @@ import { MapPin, MessageCircle, Store, Package, Shield, Clock, Trash2, CheckCirc
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { getRelativeTime } from "../utils/dates";
 import { OfferModal } from "./OfferModal";
+import { analyticsAPI } from "../services/analytics";
 
 import type { Product } from "../data/products";
 
@@ -74,6 +75,22 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
   
   // Check if product is saved by current user
   const isSaved = savedProductIds.includes(product.id);
+
+  // Track product view when component mounts
+  useEffect(() => {
+    const trackProductView = async () => {
+      if (isOwnProduct) return; // Don't track own product views
+      
+      try {
+        await analyticsAPI.trackProductView(product.id, currentUserId);
+        console.log('📊 Product view tracked for:', product.name);
+      } catch (error) {
+        console.error('❌ Error tracking product view:', error);
+      }
+    };
+
+    trackProductView();
+  }, [product.id, currentUserId, isOwnProduct]);
   
   // Get current price for saving
   const getCurrentPrice = () => {
@@ -111,13 +128,13 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-4">
-        <div className="relative mb-3">
+      <CardContent className="p-3">
+        <div className="relative mb-2">
           {/* Main Product Image */}
           <ImageWithFallback
             src={product.images?.[0] || product.image}
             alt={product.name}
-            className="w-full aspect-[4/3] object-cover rounded-lg cursor-pointer"
+            className="w-full h-48 object-cover rounded-lg cursor-pointer"
             onClick={() => onViewDetails(product.id)}
           />
           
@@ -125,7 +142,7 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
           <div className="absolute top-2 right-2">
             <AccountTypeBadge 
               userType={product.sellerType}
-              accountType="individual"
+              accountType={product.sellerVerificationStatus?.accountType || "individual"}
               size="sm"
             />
           </div>
@@ -165,35 +182,35 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
           )}
         </div>
         
-        <h3 className="font-medium mb-2">{product.name}</h3>
+        <h3 className="font-medium mb-1 text-sm line-clamp-2">{product.name}</h3>
         
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-1">
           {(() => {
             // Simple pricing display - no variations
             if (product.price && product.price > 0) {
               return (
                 <>
-                  <span className="text-xl font-semibold">{product.price.toLocaleString()} MMK</span>
-                  <span className="text-sm text-muted-foreground">per {product.unit}</span>
+                  <span className="text-lg font-semibold">{product.price.toLocaleString()} MMK</span>
+                  <span className="text-xs text-muted-foreground">per {product.unit}</span>
                 </>
               );
             } else {
               return (
                 <>
-                  <span className="text-xl font-semibold">Contact</span>
-                  <span className="text-sm text-muted-foreground">for price</span>
+                  <span className="text-lg font-semibold">Contact</span>
+                  <span className="text-xs text-muted-foreground">for price</span>
                 </>
               );
             }
           })()}
         </div>
         
-        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-          <MapPin className="w-4 h-4" />
-          <span>{displayLocation}</span>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+          <MapPin className="w-3 h-3" />
+          <span className="truncate">{displayLocation}</span>
         </div>
         
-        <div className="text-sm text-muted-foreground mb-3">
+        <div className="text-xs text-muted-foreground mb-2">
           <div className="flex items-center gap-1 mb-1">
             {/* Store icon for all users - represents seller/storefront */}
             <Store className="w-3 h-3" />
@@ -203,24 +220,17 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
             >
               {displaySellerName}
             </button>
-            {/* Show verification status beside seller name - Public display (only shows if fully verified) */}
+            {/* Show verification status beside seller name - Public display (shows all statuses) */}
             <PublicVerificationStatus 
-              verificationLevel={sellerVerificationStatus ? 
-                (() => {
-                  if (sellerVerificationStatus.level === 2) return 'business-verified';
-                  if (sellerVerificationStatus.level === 1) return 'id-verified';
-                  if (sellerVerificationStatus.trustLevel === 'under-review') return 'under-review';
-                  return 'unverified';
-                })() : 'unverified'
-              }
+              verificationLevel={product.sellerVerificationStatus?.trustLevel || 'unverified'}
               size="xs"
             />
           </div>
-          <p>Updated: {displayLastUpdated}</p>
+          <p className="truncate">Updated: {displayLastUpdated}</p>
           
           {/* Stock info display */}
           {product.availableQuantity && (
-            <div className="flex items-center gap-1 mt-2 text-primary">
+            <div className="flex items-center gap-1 mt-1 text-primary">
               <Package className="w-3 h-3" />
               <span className="text-xs font-medium">
                 {product.availableQuantity}
@@ -230,10 +240,10 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
         </div>
       </CardContent>
       
-      <CardFooter className="p-4 pt-0 flex gap-2">
+      <CardFooter className="p-3 pt-0 flex gap-2">
         <Button 
           size="sm" 
-          className={`h-9 ${isOwnProduct ? "w-full" : "flex-1"}`}
+          className={`h-8 text-xs ${isOwnProduct ? "w-full" : "flex-1"}`}
           onClick={() => onViewDetails(product.id)}
         >
           View Details
@@ -242,11 +252,11 @@ export function ProductCard({ product, onChat, onViewDetails, onViewStorefront, 
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1 h-9"
+            className="flex-1 h-8 text-xs"
             onClick={() => onChat(product.id)}
           >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Chat
+            <MessageCircle className="w-3 h-3 mr-1" />
+            {currentUserId ? 'Chat' : 'Sign in to chat'}
           </Button>
         )}
       </CardFooter>

@@ -73,15 +73,12 @@ export function useProductManagement({
           "🧹 Clearing editing state and navigating back to:",
           previousView,
         );
-        console.log("🧹 Clearing editing state and navigating back to:", previousView);
         setEditingProduct(null);
         
-        // Add slight delay to ensure state updates are processed
-        setTimeout(() => {
-          console.log("📱 Navigating to:", previousView);
-          setCurrentView(previousView);
-          console.log("✅ Navigation completed");
-        }, 100);
+        // Navigate immediately without setTimeout to prevent window blur issues
+        console.log("📱 Navigating to:", previousView);
+        setCurrentView(previousView);
+        console.log("✅ Navigation completed");
       } catch (error) {
         console.error("❌ Product operation failed:", error);
 
