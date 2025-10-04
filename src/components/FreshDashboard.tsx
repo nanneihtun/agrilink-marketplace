@@ -188,7 +188,7 @@ export function FreshDashboard({
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-amber-900/10 rounded-xl p-6 border border-primary/30">
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-xl p-6 border border-primary/30">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -349,21 +349,21 @@ export function FreshDashboard({
         
         if (verificationStatus === 'in-progress') {
           return (
-            <Alert className="border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100">
+            <Alert className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
               <Shield className="h-5 w-5" style={{ color: '#d97706' }} />
               <AlertDescription>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-amber-700">Complete Your Verification</span>
+                      <span className="font-semibold text-primary">Complete Your Verification</span>
                     </div>
-                    <p className="text-sm text-amber-600">
+                    <p className="text-sm text-primary/80">
                       Your phone is verified! Complete ID verification to get the green verified badge and boost buyer trust.
                     </p>
                   </div>
                   <Button 
                     size="sm" 
-                    className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                    className="bg-primary hover:bg-primary/90 text-white shrink-0"
                     onClick={() => {
                       console.log('📋 Continue Verification clicked');
                       onShowVerification();

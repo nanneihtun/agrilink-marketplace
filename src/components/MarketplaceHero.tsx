@@ -16,16 +16,18 @@ export function MarketplaceHero({
   onGoToLogin,
   onShowAddListing,
 }: MarketplaceHeroProps) {
+
   return (
     <section className="relative py-8 lg:py-12 overflow-hidden">
       {/* Background Elements - More grounded/earthy */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-amber-900/8 to-stone-600/12"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/8 to-primary/12"></div>
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-primary/8 to-transparent"></div>
       <div className="absolute top-6 right-6 w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
-      <div className="absolute bottom-6 left-6 w-40 h-40 bg-amber-900/25 rounded-full blur-2xl"></div>
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-stone-700/15 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-6 left-6 w-40 h-40 bg-primary/25 rounded-full blur-2xl"></div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/15 rounded-full blur-3xl"></div>
 
       <div className="relative max-w-5xl mx-auto text-center space-y-6">
+
         {/* Header */}
         <div className="space-y-3">
           <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">

@@ -79,8 +79,8 @@ export function BadgeGuide({ onBack }: BadgeGuideProps) {
             </div>
             
             <div className="text-center">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Award className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Award className="w-6 h-6 text-primary" />
               </div>
               <h4 className="font-medium">Quality Indicators</h4>
               <p className="text-sm text-muted-foreground">
@@ -289,23 +289,23 @@ export function BadgeGuide({ onBack }: BadgeGuideProps) {
       </Card>
 
       {/* Mobile Considerations */}
-      <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/10">
+      <Card className="border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10">
         <CardHeader>
-          <CardTitle className="text-amber-800 dark:text-amber-200">
+          <CardTitle className="text-primary">
             Mobile-First Design
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-amber-800 dark:text-amber-200">
+          <p className="text-primary">
             AgriLink badges are designed for Myanmar's mobile-first agricultural community:
           </p>
           
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">
+              <h4 className="font-medium text-primary mb-2">
                 Mobile Optimization
               </h4>
-              <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+              <ul className="text-sm text-primary/80 space-y-1">
                 <li>• Touch-friendly badge sizes</li>
                 <li>• Clear icons for low-literacy users</li>
                 <li>• Consistent color coding</li>
@@ -314,10 +314,10 @@ export function BadgeGuide({ onBack }: BadgeGuideProps) {
             </div>
             
             <div>
-              <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">
+              <h4 className="font-medium text-primary mb-2">
                 Cultural Sensitivity
               </h4>
-              <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+              <ul className="text-sm text-primary/80 space-y-1">
                 <li>• Respects traditional farming</li>
                 <li>• Supports informal businesses</li>
                 <li>• Multiple verification paths</li>

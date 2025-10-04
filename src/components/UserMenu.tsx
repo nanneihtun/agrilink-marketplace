@@ -93,16 +93,16 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
     } else if (isPhoneVerified && hasDocuments && hasBusinessDetails) {
       return {
         status: 'under-review',
-        color: 'text-amber-600',
-        bgColor: 'bg-amber-100',
-        borderColor: 'border-amber-200'
+        color: 'text-primary',
+        bgColor: 'bg-primary/10',
+        borderColor: 'border-primary/20'
       };
     } else if (user.verificationSubmitted || user.verificationStatus === 'under_review') {
       return {
         status: 'under-review',
-        color: 'text-amber-600',
-        bgColor: 'bg-amber-100',
-        borderColor: 'border-amber-200'
+        color: 'text-primary',
+        bgColor: 'bg-primary/10',
+        borderColor: 'border-primary/20'
       };
     } else {
       return {
@@ -191,7 +191,7 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
                 )}
                 
                 {user.userType !== 'buyer' && user.verificationStatus === 'under_review' && (
-                  <div className="flex items-center justify-center gap-1 text-sm text-amber-600">
+                  <div className="flex items-center justify-center gap-1 text-sm text-primary">
                     <AlertCircle className="w-4 h-4" />
                     Verification Under Review
                   </div>
@@ -462,7 +462,7 @@ export function UserMenu({ user, onLogout, onViewStorefront, onUpdateUser, onGoT
               }
             </span>
             {getVerificationStatus(user).status === 'under-review' && (
-              <div className="ml-auto w-2 h-2 rounded-full bg-amber-500" title="Under Review">
+              <div className="ml-auto w-2 h-2 rounded-full bg-primary" title="Under Review">
               </div>
             )}
             {getVerificationStatus(user).status === 'verified' && (

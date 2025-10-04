@@ -4,40 +4,44 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  lazy,
+  Suspense,
 } from "react";
 import { Button } from "./components/ui/button";
 import { ProductCard } from "./components/ProductCard";
 import { SearchFilters } from "./components/SearchFilters";
 import { PriceComparison } from "./components/PriceComparison";
 import { ChatInterface } from "./components/ChatInterface";
-import { ProductDetails } from "./components/ProductDetails";
-import { SellerStorefront } from "./components/SellerStorefront";
+
+// Lazy load heavy components for better performance
+const ProductDetails = lazy(() => import("./components/ProductDetails"));
+// Temporarily disable lazy loading for critical components to fix errors
 import { Login } from "./components/Login";
+import { SimplifiedProductForm } from "./components/SimplifiedProductForm";
+import { SellerStorefront } from "./components/SellerStorefront";
 import { Register } from "./components/Register";
 import { ForgotPassword } from "./components/ForgotPassword";
-
-import { SimplifiedProductForm } from "./components/SimplifiedProductForm";
 import { FreshDashboard } from "./components/FreshDashboard";
 import { BuyerDashboard } from "./components/BuyerDashboard";
 import { AccountTypeVerification } from "./components/AccountTypeVerification";
 import { Profile } from "./components/Profile";
 import { Messages } from "./components/Messages";
-import { VerificationPrompt } from "./components/VerificationPrompt";
-import { AdminVerificationPanel } from "./components/AdminVerificationPanelNew";
 import { AdminDashboard } from "./components/AdminDashboard";
-// SimpleVerificationTester removed - debug component
-import { AboutUs } from "./components/AboutUs";
-import { ContactUsPage } from "./components/ContactUsPage";
-import { FAQ } from "./components/FAQ";
-import { DealsManagement } from "./components/DealsManagement";
-import { OfferModal } from "./components/OfferModal";
-import { ReviewModal } from "./components/ReviewModal";
+import { AdminVerificationPanel } from "./components/AdminVerificationPanelNew";
+const VerificationPrompt = lazy(() => import("./components/VerificationPrompt"));
+const AboutUs = lazy(() => import("./components/AboutUs"));
+const ContactUsPage = lazy(() => import("./components/ContactUsPage"));
+const FAQ = lazy(() => import("./components/FAQ"));
+const DealsManagement = lazy(() => import("./components/DealsManagement"));
+const OfferModal = lazy(() => import("./components/OfferModal"));
+const ReviewModal = lazy(() => import("./components/ReviewModal"));
 
 // Optimized components
 import { AppHeader } from "./components/AppHeader";
 import { AppFooter } from "./components/AppFooter";
 import { MarketplaceHero } from "./components/MarketplaceHero";
 import { UserMenu } from "./components/UserMenuWithSupport";
+import { PerformanceMonitor } from "./components/PerformanceMonitor";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Pagination } from "./components/Pagination";
@@ -66,7 +70,17 @@ import { useChatManagement } from "./hooks/useChatManagement";
 // Utility functions
 import { getSellerVerificationStatus, isSellerVerified } from "./utils/sellerVerification";
 
-import { Leaf, LogIn, UserPlus, ArrowRight, Sprout, Truck, ShoppingCart, ChevronLeft } from "lucide-react";
+import { Leaf, LogIn, UserPlus, ArrowRight, Sprout, Truck, ShoppingCart, ChevronLeft, Loader2 } from "lucide-react";
+
+// Loading component for lazy-loaded components
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex items-center space-x-2">
+      <Loader2 className="w-6 h-6 animate-spin" />
+      <span className="text-muted-foreground">Loading...</span>
+    </div>
+  </div>
+);
 
 type ViewType =
   | "marketplace"
@@ -93,7 +107,8 @@ type AuthModalType = "login" | "register" | null;
 
 // No localStorage cleanup needed - using Supabase backend
 
-export default function App() {
+// Memoized App component to prevent unnecessary re-renders
+const App = React.memo(() => {
   // Simplified error boundary state
   const [criticalError, setCriticalError] = useState<string | null>(null);
   
@@ -330,16 +345,10 @@ export default function App() {
         ? allProducts.find((p) => p.id === selectedChat)
         : null;
       
-      console.log('🔍 App.tsx - selectedProduct calculation:', {
-        selectedChat,
-        allProductsLength: allProducts.length,
-        foundProduct: product ? {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: product.quantity
-        } : null
-      });
+      // Reduced logging for better performance
+      if (process.env.NODE_ENV === 'development' && selectedChat) {
+        console.log('🔍 App.tsx - selectedProduct:', product?.name || 'Not found');
+      }
       
       return product;
     },
@@ -738,12 +747,14 @@ export default function App() {
 
             {currentView === "deals" && currentUser && (
               <div className="max-w-5xl mx-auto">
-                <DealsManagement
-                  currentUserId={currentUser.id}
-                  currentUserName={currentUser.name}
-                  currentUserType={currentUser.userType}
-                  onBack={navigation.handleBackToPrevious}
-                />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <DealsManagement
+                    currentUserId={currentUser.id}
+                    currentUserName={currentUser.name}
+                    currentUserType={currentUser.userType}
+                    onBack={navigation.handleBackToPrevious}
+                  />
+                </Suspense>
               </div>
             )}
 
@@ -776,48 +787,53 @@ export default function App() {
                     currentAdmin={currentUser}
                     onBack={navigation.handleBackToPrevious}
                     onNavigateToVerification={() => navigation.handleShowAdminVerification()}
+                    onUpdateUser={handleUpdateUser}
                   />
                 </div>
               )}
 
-
-
             {currentView === "about-us" && (
               <div className="max-w-4xl mx-auto">
-                <AboutUs
-                  onBack={navigation.handleBackToPrevious}
-                />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <AboutUs
+                    onBack={navigation.handleBackToPrevious}
+                  />
+                </Suspense>
               </div>
             )}
 
             {currentView === "contact-us" && (
               <div className="max-w-4xl mx-auto">
-                <ContactUsPage
-                  onBack={navigation.handleBackToPrevious}
-                  currentUser={currentUser}
-                />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <ContactUsPage
+                    onBack={navigation.handleBackToPrevious}
+                    currentUser={currentUser}
+                  />
+                </Suspense>
               </div>
             )}
 
             {currentView === "faq" && (
               <div className="max-w-4xl mx-auto">
-                <FAQ
-                  onBack={navigation.handleBackToPrevious}
-                  onShowContactUs={navigation.handleShowContactUs}
-                />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <FAQ
+                    onBack={navigation.handleBackToPrevious}
+                    onShowContactUs={navigation.handleShowContactUs}
+                  />
+                </Suspense>
               </div>
             )}
 
             {currentView === "marketplace" && (
               <div className="space-y-8">
-                {/* Optimized Hero Component */}
-                <MarketplaceHero
-                  currentUser={currentUser}
-                  allProducts={allProducts}
-                  onGoToRegister={navigation.handleGoToRegister}
-                  onGoToLogin={navigation.handleGoToLogin}
-                  onShowAddListing={productManagement.handleShowAddListing}
-                />
+                    {/* Optimized Hero Component */}
+                    <MarketplaceHero
+                      currentUser={currentUser}
+                      allProducts={allProducts}
+                      onGoToRegister={navigation.handleGoToRegister}
+                      onGoToLogin={navigation.handleGoToLogin}
+                      onShowAddListing={productManagement.handleShowAddListing}
+                    />
 
                 {/* Search and Products Section */}
                 <section className="space-y-6">
@@ -951,8 +967,9 @@ export default function App() {
             )}
 
             {currentView === "product-details" &&
-              productToView &&
-              (() => {
+              productToView && (
+                <Suspense fallback={<LoadingSpinner />}>
+                  {(() => {
                 const productSellerVerificationStatus = productToView.sellerVerificationStatus || {
                   idVerified: false,
                   businessVerified: false,
@@ -1037,7 +1054,9 @@ export default function App() {
                     sellerProfile={sellerProfile}
                   />
                 );
-              })()}
+                  })()}
+                </Suspense>
+              )}
 
             {currentView === "price-comparison" &&
               productToView && (
@@ -1053,8 +1072,8 @@ export default function App() {
               )}
 
             {currentView === "seller-storefront" &&
-              selectedSellerId &&
-              (() => {
+              selectedSellerId && (
+                (() => {
                 // Get seller info - check current user first, then localStorage
                 let sellerInfo: any = null;
                 
@@ -1184,7 +1203,8 @@ export default function App() {
                     }
                   />
                 );
-              })()}
+                })()
+              )}
           </div>
         </main>
 
@@ -1259,24 +1279,26 @@ export default function App() {
 
         {/* Verification Prompt Modal */}
         {verificationPrompt.show && (
-          <VerificationPrompt
-            feature={verificationPrompt.feature}
-            sellerName={verificationPrompt.sellerName}
-            userType={currentUser?.userType}
-            onClose={() =>
-              setVerificationPrompt({
-                show: false,
-                feature: "chat",
-              })
-            }
-            onStartVerification={() => {
-              setVerificationPrompt({
-                show: false,
-                feature: "chat",
-              });
-              navigation.handleShowVerification();
-            }}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <VerificationPrompt
+              feature={verificationPrompt.feature}
+              sellerName={verificationPrompt.sellerName}
+              userType={currentUser?.userType}
+              onClose={() =>
+                setVerificationPrompt({
+                  show: false,
+                  feature: "chat",
+                })
+              }
+              onStartVerification={() => {
+                setVerificationPrompt({
+                  show: false,
+                  feature: "chat",
+                });
+                navigation.handleShowVerification();
+              }}
+            />
+          </Suspense>
         )}
 
         {/* Optimized Footer Component */}
@@ -1289,49 +1311,59 @@ export default function App() {
 
         {/* Offer Modal */}
         {showOfferModal && selectedProductForOffer && currentUser && (
-          <OfferModal
-            isOpen={showOfferModal}
-            onClose={() => {
-              setShowOfferModal(false);
-              setSelectedProductForOffer(null);
-            }}
-            onSubmit={handleOfferSubmit}
-            product={{
-              id: selectedProductForOffer.id,
-              name: selectedProductForOffer.name,
-              price: selectedProductForOffer.price,
-              unit: selectedProductForOffer.unit,
-              sellerName: selectedProductForOffer.sellerName,
-              location: selectedProductForOffer.location
-            }}
-            currentUser={{
-              id: currentUser.id,
-              name: currentUser.name
-            }}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <OfferModal
+              isOpen={showOfferModal}
+              onClose={() => {
+                setShowOfferModal(false);
+                setSelectedProductForOffer(null);
+              }}
+              onSubmit={handleOfferSubmit}
+              product={{
+                id: selectedProductForOffer.id,
+                name: selectedProductForOffer.name,
+                price: selectedProductForOffer.price,
+                unit: selectedProductForOffer.unit,
+                sellerName: selectedProductForOffer.sellerName,
+                location: selectedProductForOffer.location
+              }}
+              currentUser={{
+                id: currentUser.id,
+                name: currentUser.name
+              }}
+            />
+          </Suspense>
         )}
 
         {/* Review Modal */}
         {showReviewModal && selectedTransactionForReview && currentUser && (
-          <ReviewModal
-            isOpen={showReviewModal}
-            onClose={() => {
-              setShowReviewModal(false);
-              setSelectedTransactionForReview(null);
-            }}
-            onSubmit={handleReviewSubmit}
-            transaction={selectedTransactionForReview}
-            currentUser={{
-              id: currentUser.id,
-              name: currentUser.name
-            }}
-          />
+          <Suspense fallback={<LoadingSpinner />}>
+            <ReviewModal
+              isOpen={showReviewModal}
+              onClose={() => {
+                setShowReviewModal(false);
+                setSelectedTransactionForReview(null);
+              }}
+              onSubmit={handleReviewSubmit}
+              transaction={selectedTransactionForReview}
+              currentUser={{
+                id: currentUser.id,
+                name: currentUser.name
+              }}
+            />
+          </Suspense>
         )}
 
         {/* Toast Notifications */}
         <Toaster position="top-right" />
+        
+        {/* Performance Monitor (Development Only) - Temporarily disabled */}
+        {/* {process.env.NODE_ENV === 'development' && <PerformanceMonitor />} */}
         </div>
       </>
     </ErrorBoundary>
   );
-}
+});
+
+// Export the memoized component
+export default App;

@@ -256,8 +256,8 @@ export const useAuth = () => {
       if (updates.region !== undefined) dbUpdates.region = updates.region;
       if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
       if (updates.verified !== undefined) dbUpdates.verified = updates.verified;
-      if (updates.profileImage !== undefined) dbUpdates.profile_image = updates.profileImage;
-      if (updates.storefrontImage !== undefined) dbUpdates.storefront_image = updates.storefrontImage;
+    if (updates.profileImage !== undefined) dbUpdates.profile_image = updates.profileImage;
+    if (updates.storefrontImage !== undefined) dbUpdates.storefront_image = updates.storefrontImage;
       
       // Verification fields that now exist in the database
       if (updates.verificationStatus !== undefined) {
@@ -347,8 +347,8 @@ export const useAuth = () => {
             phone_verified_at,
             verified_at,
             agri_link_verification_requested_at,
-            profile_image,
-            storefront_image
+        profile_image,
+        storefront_image
           `)
           .eq('id', userId)
           .single();
@@ -435,7 +435,7 @@ export const useAuth = () => {
                 agriLinkVerificationRequested: retryProfile.verification_submitted || false,
                 agriLinkVerificationRequestedAt: retryProfile.agri_link_verification_requested_at,
                 profileImage: retryProfile.profile_image || '',
-                storefrontImage: retryProfile.storefront_image || ''
+                storefrontImage: retryProfile.storefront_image || '',
               };
               
               if (mounted) {
@@ -479,8 +479,8 @@ export const useAuth = () => {
           verifiedAt: profile.verified_at,
           agriLinkVerificationRequested: profile.verification_submitted || false,
           agriLinkVerificationRequestedAt: profile.agri_link_verification_requested_at,
-          profileImage: profile.profile_image || '',
-          storefrontImage: profile.storefront_image || ''
+      profileImage: profile.profile_image || '',
+      storefrontImage: profile.storefront_image || ''
         };
 
           if (mounted) {

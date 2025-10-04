@@ -253,13 +253,13 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
 
       {/* Authentication Warning */}
       {!effectiveCurrentUser && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-amber-700">
+            <div className="flex items-center gap-2 text-primary">
               <AlertTriangle className="w-4 h-4" />
               <span className="font-medium">Authentication Issue</span>
             </div>
-            <p className="text-amber-600 text-sm mt-1">
+            <p className="text-primary/80 text-sm mt-1">
               No authenticated user found. Please log in to view messages.
             </p>
             <Button 

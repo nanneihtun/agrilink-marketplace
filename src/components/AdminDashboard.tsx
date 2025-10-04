@@ -49,9 +49,10 @@ interface AdminDashboardProps {
   currentAdmin: any;
   onBack: () => void;
   onNavigateToVerification?: () => void;
+  onUpdateUser?: (updates: any) => Promise<void>;
 }
 
-export function AdminDashboard({ currentAdmin, onBack, onNavigateToVerification }: AdminDashboardProps) {
+export function AdminDashboard({ currentAdmin, onBack, onNavigateToVerification, onUpdateUser }: AdminDashboardProps) {
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     pendingVerifications: 0,
@@ -497,6 +498,7 @@ export function AdminDashboard({ currentAdmin, onBack, onNavigateToVerification 
           </div>
         </div>
       </div>
+
     </div>
   );
 }

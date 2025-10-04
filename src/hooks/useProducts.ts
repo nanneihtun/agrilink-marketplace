@@ -2,54 +2,60 @@ import { useState, useEffect, useCallback } from 'react'
 import { productsAPI, realtimeAPI } from '../services/api'
 import { Product } from '../data/products'
 import ENV from '../config/env'
+import { useDataCache } from './useDataCache'
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch all products
+  // Use cached data fetching
+  const { data: cachedProducts, loading: cacheLoading, error: cacheError, fetchData, invalidate } = useDataCache<Product[]>(
+    'products',
+    async () => {
+      if (!ENV.isSupabaseConfigured()) {
+        console.log('❌ Supabase not configured');
+        return [];
+      }
+      
+      console.log('🔄 Fetching products from Supabase...')
+      const backendProducts = await productsAPI.getAll()
+      const transformedProducts = backendProducts.map(transformBackendProduct)
+      console.log('✅ Products loaded:', transformedProducts.length)
+      return transformedProducts;
+    },
+    { ttl: 2 * 60 * 1000 } // 2 minutes cache
+  )
+
+  // Fetch all products (legacy method for compatibility)
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       
-      if (!ENV.isSupabaseConfigured()) {
-        console.log('❌ Supabase not configured');
-        setProducts([]);
-        setLoading(false);
-        return;
+      const result = await fetchData(true); // Force refresh
+      if (result) {
+        setProducts(result)
       }
-      
-      
-      // Fetch products from Supabase
-      console.log('🔄 Fetching products from Supabase...')
-      const backendProducts = await productsAPI.getAll()
-      const transformedProducts = backendProducts.map(transformBackendProduct)
-      setProducts(transformedProducts)
-      console.log('✅ Products loaded:', transformedProducts.length)
     } catch (err) {
       console.error('Fetch products error:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch products')
-      setProducts([]) // Set empty array to prevent infinite loading
+      setProducts([])
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [fetchData])
 
   // Transform backend product to frontend format (matches actual table schema)
   const transformBackendProduct = (backendProduct: any): Product => {
-    console.log('💾 Backend product debug:', {
-      id: backendProduct.id,
-      name: backendProduct.name,
-      price: backendProduct.price,
-      priceType: typeof backendProduct.price,
-      unit: backendProduct.unit,
-      quantity: backendProduct.quantity,
-      seller_name: backendProduct.seller_name,
-      users: backendProduct.users,
-      fullBackendProduct: backendProduct
-    })
+    // Reduced logging for better performance
+    if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+      console.log('💾 Backend product sample:', {
+        id: backendProduct.id,
+        name: backendProduct.name,
+        price: backendProduct.price
+      })
+    }
     
     // Get verification status from joined users data
     const userData = backendProduct.users;
@@ -145,13 +151,13 @@ export const useProducts = () => {
       is_active: true
     }
     
-    console.log('🔄 Frontend to backend transform (matches table schema):', transformed)
-    console.log('🖼️ Images debug:', {
-      'frontendProduct.images': frontendProduct.images,
-      'frontendProduct.image': frontendProduct.image,
-      'transformed.images': transformed.images,
-      'images_length': transformed.images?.length || 0
-    })
+    // Reduced logging for better performance
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Frontend to backend transform:', {
+        name: transformed.name,
+        images_count: transformed.images?.length || 0
+      })
+    }
     return transformed
   }
 
@@ -225,11 +231,35 @@ export const useProducts = () => {
     }
   }, [])
 
-  // Initial fetch
+  // Sync cached data with local state
   useEffect(() => {
-    console.log('🔄 useProducts - Initial fetch starting...');
-    fetchProducts()
-  }, [fetchProducts])
+    if (cachedProducts) {
+      setProducts(cachedProducts)
+      setLoading(false)
+      setError(null)
+    } else if (cacheError) {
+      // Don't show database timeout as an error to users
+      if (cacheError.includes('timeout') || cacheError.includes('57014')) {
+        console.log('⏱️ Database timeout - showing empty state');
+        setProducts([])
+        setLoading(false)
+        setError(null)
+      } else {
+        setError(cacheError)
+        setLoading(false)
+      }
+    } else if (cacheLoading) {
+      setLoading(true)
+    }
+  }, [cachedProducts, cacheLoading, cacheError])
+
+  // Initial fetch - prevent duplicate calls
+  useEffect(() => {
+    if (!cachedProducts && !cacheLoading) {
+      console.log('🔄 useProducts - Initial fetch starting...');
+      fetchData()
+    }
+  }, [cachedProducts, cacheLoading, fetchData])
 
   // Set up real-time subscription
   useEffect(() => {
@@ -242,11 +272,17 @@ export const useProducts = () => {
         if (payload.eventType === 'INSERT') {
           const newProduct = transformBackendProduct(payload.new)
           setProducts(prev => [newProduct, ...prev])
+          // Invalidate cache to ensure fresh data
+          invalidate()
         } else if (payload.eventType === 'UPDATE') {
           const updatedProduct = transformBackendProduct(payload.new)
           setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p))
+          // Invalidate cache to ensure fresh data
+          invalidate()
         } else if (payload.eventType === 'DELETE') {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id))
+          // Invalidate cache to ensure fresh data
+          invalidate()
         }
       })
 

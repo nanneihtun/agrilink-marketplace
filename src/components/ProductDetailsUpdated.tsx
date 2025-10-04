@@ -709,11 +709,11 @@ export function ProductDetails({
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Clock className="w-6 h-6 text-amber-500 cursor-pointer hover:text-amber-600 transition-colors" />
+                              <Clock className="w-6 h-6 text-primary cursor-pointer hover:text-primary/80 transition-colors" />
                             </TooltipTrigger>
-                            <TooltipContent className="bg-amber-600 text-white border-amber-500">
+                            <TooltipContent className="bg-primary text-white border-primary">
                               <p className="text-sm font-medium">{sellerVerificationStatus.tierLabel}</p>
-                              <p className="text-xs text-amber-100">Verification documents under review</p>
+                              <p className="text-xs text-white/90">Verification documents under review</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
