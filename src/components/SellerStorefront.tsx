@@ -265,21 +265,23 @@ export function SellerStorefront({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <ChevronLeft 
-            className="w-5 h-5 cursor-pointer text-muted-foreground hover:text-foreground transition-colors" 
-            onClick={onBack}
-          />
+      <div className="space-y-4 mb-8">
+        {/* Back button row */}
+        <Button variant="ghost" onClick={onBack} className="h-9 px-3 -ml-3">
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        
+        {/* Title section - aligned with content */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">{seller.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{seller.name}</h1>
             <p className="text-muted-foreground">
               {seller.type === 'farmer' ? 'Farm' : 'Trading'} Storefront
             </p>
           </div>
-        </div>
 
-        {/* Preview Mode Toggle - Only show for storefront owners */}
+          {/* Preview Mode Toggle - Only show for storefront owners */}
         {isOwnStorefront && onTogglePreviewMode && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
@@ -306,6 +308,7 @@ export function SellerStorefront({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Preview Mode Banner */}
@@ -1217,6 +1220,69 @@ export function SellerStorefront({
                     <p>Add your business policies to help customers understand your services</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Reviews Section */}
+          {sellerStats && sellerStats.recentReviews.length > 0 && (
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  Customer Reviews ({sellerStats.totalReviews})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {sellerStats.recentReviews.map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {review.reviewer_name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{review.reviewer_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {getRelativeTime(review.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? 'text-yellow-400 fill-current'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-sm font-medium ml-1">
+                            {review.rating}.0
+                          </span>
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {review.comment}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {sellerStats.totalReviews > sellerStats.recentReviews.length && (
+                    <div className="text-center pt-2">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {sellerStats.recentReviews.length} of {sellerStats.totalReviews} reviews
+                      </p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}

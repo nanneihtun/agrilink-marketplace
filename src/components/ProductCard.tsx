@@ -239,6 +239,15 @@ export const ProductCard = memo(function ProductCard({ product, onChat, onViewDe
               verificationLevel={product.sellerVerificationStatus?.trustLevel || 'unverified'}
               size="xs"
             />
+            {/* Debug: Log product verification data */}
+            {process.env.NODE_ENV === 'development' && Math.random() < 0.1 && console.log('🔍 ProductCard verification:', {
+              sellerId: product.sellerId,
+              sellerName: product.sellerName,
+              accountType: product.sellerVerificationStatus?.accountType,
+              trustLevel: product.sellerVerificationStatus?.trustLevel,
+              verified: product.sellerVerified,
+              businessVerified: product.sellerVerificationStatus?.businessVerified
+            })}
           </div>
           <p className="truncate">Updated: {displayLastUpdated}</p>
           

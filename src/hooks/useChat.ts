@@ -27,9 +27,19 @@ interface Conversation {
   buyerName: string
   buyerType: string
   buyerLocation: string
+  buyerAccountType: string
+  buyerVerified: boolean
+  buyerPhoneVerified: boolean
+  buyerVerificationStatus: string
+  buyerVerificationSubmitted: boolean
   sellerName: string
   sellerType: string
   sellerLocation: string
+  sellerAccountType: string
+  sellerVerified: boolean
+  sellerPhoneVerified: boolean
+  sellerVerificationStatus: string
+  sellerVerificationSubmitted: boolean
   lastMessage?: string
   lastMessageTime?: string
   unreadCount: number
@@ -65,13 +75,33 @@ export const useChat = () => {
         return;
       }
 
-      // Fetch conversations from Supabase
+      // Fetch conversations from Supabase with complete user verification data
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
         .select(`
           *,
-          buyer:users!conversations_buyer_id_fkey(id, name, user_type, location),
-          seller:users!conversations_seller_id_fkey(id, name, user_type, location),
+          buyer:users!conversations_buyer_id_fkey(
+            id, 
+            name, 
+            user_type, 
+            account_type,
+            location, 
+            verified, 
+            phone_verified, 
+            verification_status, 
+            verification_submitted
+          ),
+          seller:users!conversations_seller_id_fkey(
+            id, 
+            name, 
+            user_type, 
+            account_type,
+            location, 
+            verified, 
+            phone_verified, 
+            verification_status, 
+            verification_submitted
+          ),
           product:products!conversations_product_id_fkey(id, name, image)
         `)
         .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
@@ -91,9 +121,19 @@ export const useChat = () => {
         buyerName: conv.buyer?.name || 'Unknown Buyer',
         buyerType: conv.buyer?.user_type || 'buyer',
         buyerLocation: conv.buyer?.location || 'Unknown Location',
+        buyerAccountType: conv.buyer?.account_type || 'individual',
+        buyerVerified: conv.buyer?.verified || false,
+        buyerPhoneVerified: conv.buyer?.phone_verified || false,
+        buyerVerificationStatus: conv.buyer?.verification_status || 'not_started',
+        buyerVerificationSubmitted: conv.buyer?.verification_submitted || false,
         sellerName: conv.seller?.name || 'Unknown Seller',
         sellerType: conv.seller?.user_type || 'farmer',
         sellerLocation: conv.seller?.location || 'Unknown Location',
+        sellerAccountType: conv.seller?.account_type || 'individual',
+        sellerVerified: conv.seller?.verified || false,
+        sellerPhoneVerified: conv.seller?.phone_verified || false,
+        sellerVerificationStatus: conv.seller?.verification_status || 'not_started',
+        sellerVerificationSubmitted: conv.seller?.verification_submitted || false,
         lastMessage: conv.last_message,
         lastMessageTime: conv.last_message_time,
         unreadCount: conv.unread_count || 0,
@@ -102,6 +142,21 @@ export const useChat = () => {
 
       setConversations(formattedConversations)
       console.log('✅ Conversations loaded from Supabase:', formattedConversations.length)
+      
+      // Debug: Log verification data for first conversation
+      if (formattedConversations.length > 0) {
+        const firstConv = formattedConversations[0];
+        console.log('🔍 First conversation verification data:', {
+          sellerName: firstConv.sellerName,
+          sellerVerified: firstConv.sellerVerified,
+          sellerAccountType: firstConv.sellerAccountType,
+          sellerVerificationStatus: firstConv.sellerVerificationStatus,
+          buyerName: firstConv.buyerName,
+          buyerVerified: firstConv.buyerVerified,
+          buyerAccountType: firstConv.buyerAccountType,
+          buyerVerificationStatus: firstConv.buyerVerificationStatus
+        });
+      }
       
     } catch (err) {
       console.error('❌ Failed to load conversations:', err)
@@ -113,14 +168,24 @@ export const useChat = () => {
   }, [])
 
   const loadMessages = useCallback(async (conversationId: string) => {
+    console.log('🔄 loadMessages called for conversation:', conversationId);
+    
     if (!ENV.isSupabaseConfigured()) {
+      console.log('❌ Supabase not configured');
       setMessages(prev => ({ ...prev, [conversationId]: [] }));
       return;
     }
 
     try {
       const { supabase } = await import('../lib/supabase')
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      console.log('🔍 Session check:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        sessionError: sessionError?.message,
+        userId: session?.user?.id
+      });
       
       if (!session?.access_token) {
         console.log('❌ No valid session - authentication required for chat');
@@ -128,6 +193,7 @@ export const useChat = () => {
         return;
       }
 
+      console.log('🔍 Fetching messages from database for conversation:', conversationId);
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
@@ -135,8 +201,11 @@ export const useChat = () => {
         .order('created_at', { ascending: true })
 
       if (messagesError) {
+        console.error('❌ Error fetching messages:', messagesError);
         throw messagesError
       }
+
+      console.log('📨 Raw messages from database:', messagesData?.length || 0, 'messages');
 
       const formattedMessages = messagesData?.map(msg => ({
         id: msg.id,
@@ -148,6 +217,9 @@ export const useChat = () => {
         isRead: msg.is_read || false,
         offerDetails: msg.offer_details ? JSON.parse(msg.offer_details) : undefined
       })) || []
+
+      console.log('✅ Formatted messages:', formattedMessages.length, 'messages');
+      console.log('📝 Message contents:', formattedMessages.map(m => ({ id: m.id, content: m.content.substring(0, 50) + '...' })));
 
       setMessages(prev => ({
         ...prev,
@@ -164,7 +236,12 @@ export const useChat = () => {
             table: 'messages',
             filter: `conversation_id=eq.${conversationId}`
           }, (payload) => {
-            console.log('🔄 New message received via real-time:', payload.new)
+            console.log('🔄 New message received via real-time:', {
+              messageId: payload.new.id,
+              conversationId: payload.new.conversation_id,
+              subscriptionFor: conversationId,
+              content: payload.new.content.substring(0, 50) + '...'
+            });
             console.log('🔄 Current messages before update:', messages[conversationId]?.length || 0)
             
             const newMessage = {
@@ -178,19 +255,31 @@ export const useChat = () => {
               offerDetails: payload.new.offer_details ? JSON.parse(payload.new.offer_details) : undefined
             }
 
-            setMessages(prev => {
-              const updated = {
-                ...prev,
-                [conversationId]: [...(prev[conversationId] || []), newMessage]
-              }
-              console.log('🔄 Messages after update:', updated[conversationId]?.length || 0)
-              return updated
-            })
+            // CRITICAL: Only add message if it belongs to this conversation
+            if (payload.new.conversation_id === conversationId) {
+              setMessages(prev => {
+                const updated = {
+                  ...prev,
+                  [conversationId]: [...(prev[conversationId] || []), newMessage]
+                }
+                console.log('✅ Message added to correct conversation:', conversationId, 'Total messages:', updated[conversationId]?.length || 0)
+                return updated
+              })
+            } else {
+              console.log('❌ Message ignored - wrong conversation:', {
+                messageConversationId: payload.new.conversation_id,
+                subscriptionConversationId: conversationId
+              });
+            }
           })
           .subscribe()
 
-        setSubscriptions(prev => new Map([...prev, [conversationId, channel]]))
-        console.log('✅ Real-time subscription set up for conversation:', conversationId)
+        setSubscriptions(prev => {
+          const newSubscriptions = new Map([...prev, [conversationId, channel]]);
+          console.log('✅ Real-time subscription set up for conversation:', conversationId);
+          console.log('📊 Total active subscriptions:', newSubscriptions.size);
+          return newSubscriptions;
+        })
       }
 
       console.log('✅ Messages loaded from Supabase:', formattedMessages.length)
@@ -214,7 +303,14 @@ export const useChat = () => {
 
     try {
       const { supabase } = await import('../lib/supabase')
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      console.log('🔍 SendMessage Session check:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        sessionError: sessionError?.message,
+        userId: session?.user?.id
+      });
       
       if (!session?.access_token) {
         console.log('❌ No valid session - authentication required for chat');
@@ -337,7 +433,7 @@ export const useChat = () => {
         .eq('id', sellerId)
         .single()
 
-      // Create new conversation
+      // Create new conversation (without initial message - will be set when first message is sent)
       const { data: conversationData, error: conversationError } = await supabase
         .from('conversations')
         .insert({
@@ -347,8 +443,8 @@ export const useChat = () => {
           product_name: productData?.name || 'Unknown Product',
           buyer_name: buyerData?.name || 'Unknown Buyer',
           seller_name: sellerData?.name || 'Unknown Seller',
-          last_message: 'Conversation started',
-          last_message_time: new Date().toISOString()
+          last_message: null, // No initial message - will be set when first message is sent
+          last_message_time: null
         })
         .select()
         .single()
@@ -401,6 +497,71 @@ export const useChat = () => {
     }
   }, [subscriptions])
 
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    if (!ENV.isSupabaseConfigured()) {
+      return;
+    }
+
+    try {
+      const { supabase } = await import('../lib/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        console.log('❌ No valid session - authentication required for chat');
+        return;
+      }
+
+      console.log('🗑️ Deleting conversation:', conversationId);
+
+      // First delete all messages in the conversation
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversationId)
+
+      if (messagesError) {
+        console.error('❌ Error deleting messages:', messagesError);
+        throw messagesError
+      }
+
+      // Then delete the conversation
+      const { error: conversationError } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId)
+
+      if (conversationError) {
+        console.error('❌ Error deleting conversation:', conversationError);
+        throw conversationError
+      }
+
+      // Remove from local state
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId))
+      setMessages(prev => {
+        const updated = { ...prev }
+        delete updated[conversationId]
+        return updated
+      })
+
+      // Clean up subscription
+      const subscription = subscriptions.get(conversationId)
+      if (subscription) {
+        subscription.unsubscribe()
+        setSubscriptions(prev => {
+          const updated = new Map(prev)
+          updated.delete(conversationId)
+          return updated
+        })
+      }
+
+      console.log('✅ Conversation deleted successfully:', conversationId)
+      
+    } catch (err) {
+      console.error('❌ Failed to delete conversation:', err)
+      throw err
+    }
+  }, [subscriptions])
+
   return {
     conversations,
     messages,
@@ -409,6 +570,7 @@ export const useChat = () => {
     loadConversations,
     loadMessages,
     sendMessage,
-    startConversation
+    startConversation,
+    deleteConversation
   }
 }

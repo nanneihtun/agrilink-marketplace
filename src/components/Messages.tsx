@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { UserBadge, getUserVerificationLevel, getUserAccountType } from "./UserBadgeSystem";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Input } from "./ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { ChatInterface } from "./ChatInterface";
 import { useChat } from "../hooks/useChat";
 // Chat demo utilities removed - using Supabase backend only
@@ -18,7 +19,8 @@ import {
   Package,
   MapPin,
   Star,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from "lucide-react";
 
 interface Message {
@@ -69,7 +71,7 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
   const effectiveCurrentUser = currentUser;
   
   // Use real chat data with the effective current user
-  const { conversations, messages, loading, loadConversations, loadMessages, error } = useChat();
+  const { conversations, messages, loading, loadConversations, loadMessages, deleteConversation, error } = useChat();
   
   // No debug logging needed - using Supabase authentication
 
@@ -120,6 +122,25 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
       .slice(0, 2);
   };
 
+  const handleDeleteConversation = async (conversationId: string, conversationName: string) => {
+    if (!confirm(`Are you sure you want to delete the conversation with ${conversationName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteConversation(conversationId);
+      toast.success('Conversation deleted successfully');
+      
+      // Close the conversation if it's currently selected
+      if (selectedConversation === conversationId) {
+        setSelectedConversation(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast.error('Failed to delete conversation. Please try again.');
+    }
+  };
+
   // Transform real conversations to match component interface
   const transformedConversations = useMemo(() => {
     if (!conversations?.length) {
@@ -150,7 +171,15 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
           type: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerType : conv.buyerType,
           location: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerLocation : conv.buyerLocation || 'Unknown Location',
           rating: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerRating : conv.buyerRating,
-          verified: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerified : conv.buyerVerified
+          verified: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerified : conv.buyerVerified,
+          // Add complete verification data for badge display
+          accountType: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerAccountType : conv.buyerAccountType,
+          phoneVerified: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerPhoneVerified : conv.buyerPhoneVerified,
+          verificationStatus: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerificationStatus : conv.buyerVerificationStatus,
+          verificationSubmitted: conv.buyerId === effectiveCurrentUser?.id ? conv.sellerVerificationSubmitted : conv.buyerVerificationSubmitted,
+          businessVerified: conv.buyerId === effectiveCurrentUser?.id ? 
+            (conv.sellerAccountType === 'business' && conv.sellerVerified) : 
+            (conv.buyerAccountType === 'business' && conv.buyerVerified)
         },
         lastMessage: lastMessageFromConv ? {
           content: lastMessageFromConv,
@@ -410,9 +439,22 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
                             {conversation.unreadCount}
                           </Badge>
                         )}
-                        <Button variant="ghost" size="sm" className="p-1">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="p-1">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteConversation(conversation.id, conversation.otherParty.name)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Conversation
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
@@ -457,8 +499,18 @@ export function Messages({ currentUser, onBack, onStartChat }: MessagesProps) {
 
       {/* Selected Conversation Chat Interface */}
       {selectedConversation && (() => {
+        console.log('🔍 Messages - Looking for conversation:', selectedConversation);
+        console.log('🔍 Messages - Available conversations:', transformedConversations.map(c => ({ id: c.id, name: c.otherParty.name })));
         const conversation = transformedConversations.find(conv => conv.id === selectedConversation);
+        console.log('🔍 Messages - Found conversation:', conversation ? { id: conversation.id, name: conversation.otherParty.name } : 'NOT FOUND');
         if (!conversation) return null;
+
+        console.log('🔍 Messages - Passing to ChatInterface:', {
+          conversationId: conversation.id,
+          sellerName: conversation.otherParty.name,
+          productId: conversation.productId,
+          sellerId: conversation.otherParty.id
+        });
 
         return (
           <>

@@ -355,7 +355,7 @@ export const useAuth = () => {
           
         // Add timeout to prevent hanging - database is slow (6+ seconds)
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 15000)
+          setTimeout(() => reject(new Error('Database query timeout')), 30000)
         );
         
         const { data: profile, error: profileError } = await Promise.race([

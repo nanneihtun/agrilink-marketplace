@@ -512,16 +512,36 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
         businessLicenseNumber: businessForm.businessLicenseNumber
       });
       
+      // Save to database first
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({
+          business_name: businessForm.businessName,
+          business_description: businessForm.businessDescription,
+          business_license_number: businessForm.businessLicenseNumber,
+          business_details_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentUser.id);
+
+      if (dbError) {
+        console.error('❌ Database error:', dbError);
+        throw new Error('Failed to save to database');
+      }
+
+      // Then update local state
       await onUpdate({
         ...currentUser,
         businessName: businessForm.businessName,
         businessDescription: businessForm.businessDescription,
-        businessLicenseNumber: businessForm.businessLicenseNumber
+        businessLicenseNumber: businessForm.businessLicenseNumber,
+        businessDetailsCompleted: true
       });
       
-      console.log('✅ Business information saved to user profile');
+      console.log('✅ Business information saved to database and user profile');
       setIsEditingBusiness(false);
     } catch (error) {
+      console.error('❌ Error saving business info:', error);
       alert('Failed to save business information. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -1059,88 +1079,8 @@ export function AccountTypeVerification({ currentUser, onClose, onUpdate }: Acco
     <div className="max-w-2xl mx-auto space-y-4 md:space-y-6 pb-20">
       {/* Progress Header - Left Aligned */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div>
           <h1 className="text-xl font-semibold">AgriLink Verification</h1>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={async () => {
-              console.log('🔄 Manual refresh triggered');
-              try {
-                const { data: profile, error } = await supabase
-                  .from('users')
-                  .select(`
-                    id,
-                    email,
-                    name,
-                    user_type,
-                    account_type,
-                    location,
-                    region,
-                    verified,
-                    phone_verified,
-                    phone,
-                    business_name,
-                    business_description,
-                    business_license_number,
-                    created_at,
-                    total_reviews,
-                    verification_status,
-                    verification_documents,
-                    verification_submitted,
-                    phone_verified_at,
-                    verified_at,
-                    agri_link_verification_requested_at,
-                    business_details_completed
-                  `)
-                  .eq('id', currentUser.id)
-                  .single();
-
-                if (error) {
-                  console.error('❌ Error refreshing user data:', error);
-                  return;
-                }
-
-                if (profile) {
-                  const updatedUser: User = {
-                    id: profile.id,
-                    email: profile.email,
-                    name: profile.name,
-                    userType: profile.user_type,
-                    accountType: profile.account_type,
-                    location: profile.location,
-                    region: profile.region || undefined,
-                    verified: profile.verified,
-                    phoneVerified: profile.phone_verified,
-                    phone: profile.phone,
-                    businessName: profile.business_name,
-                    businessDescription: profile.business_description,
-                    businessLicenseNumber: profile.business_license_number,
-                    experience: 'Unknown',
-                    joinedDate: profile.created_at,
-                    totalReviews: profile.total_reviews || 0,
-                    verificationStatus: profile.verification_status || 'not_started',
-                    verificationDocuments: profile.verification_documents || {},
-                    phoneVerifiedAt: profile.phone_verified_at,
-                    verifiedAt: profile.verified_at,
-                    agriLinkVerificationRequested: profile.verification_submitted || false,
-                    agriLinkVerificationRequestedAt: profile.agri_link_verification_requested_at
-                  };
-
-                  console.log('✅ User data refreshed:', updatedUser.email);
-                  console.log('📋 Updated verification status:', updatedUser.verificationStatus);
-                  console.log('📋 Updated verified status:', updatedUser.verified);
-                  
-                  // Update the user data
-                  await onUpdate(updatedUser);
-                }
-              } catch (error) {
-                console.error('❌ Error refreshing user data:', error);
-              }
-            }}
-          >
-            🔄 Refresh
-          </Button>
         </div>
         <p className="text-sm text-muted-foreground">
           Complete your verification in {isBusinessAccount ? '4' : '3'} steps to build trust and credibility

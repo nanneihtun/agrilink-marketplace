@@ -292,6 +292,8 @@ export function FreshDashboard({
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold text-emerald-700">AgriLink Verification Complete</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Verified Status</span>
+                      <div className="w-4 h-4 flex-shrink-0"></div>
                     </div>
                     <p className="text-sm text-emerald-600">
                       Your account is fully verified! You now have enhanced buyer trust and credibility on the platform.

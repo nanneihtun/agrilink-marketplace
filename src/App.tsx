@@ -8,14 +8,14 @@ import React, {
   Suspense,
 } from "react";
 import { Button } from "./components/ui/button";
+import { Loader2, Package } from "lucide-react";
 import { ProductCard } from "./components/ProductCard";
 import { SearchFilters } from "./components/SearchFilters";
 import { PriceComparison } from "./components/PriceComparison";
 import { ChatInterface } from "./components/ChatInterface";
 
-// Lazy load heavy components for better performance
-const ProductDetails = lazy(() => import("./components/ProductDetails"));
-// Temporarily disable lazy loading for critical components to fix errors
+// Import ProductDetails directly to avoid lazy loading issues
+import { ProductDetails } from "./components/ProductDetails";
 import { Login } from "./components/Login";
 import { SimplifiedProductForm } from "./components/SimplifiedProductForm";
 import { SellerStorefront } from "./components/SellerStorefront";
@@ -28,13 +28,14 @@ import { Profile } from "./components/Profile";
 import { Messages } from "./components/Messages";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { AdminVerificationPanel } from "./components/AdminVerificationPanelNew";
-const VerificationPrompt = lazy(() => import("./components/VerificationPrompt"));
-const AboutUs = lazy(() => import("./components/AboutUs"));
-const ContactUsPage = lazy(() => import("./components/ContactUsPage"));
-const FAQ = lazy(() => import("./components/FAQ"));
-const DealsManagement = lazy(() => import("./components/DealsManagement"));
-const OfferModal = lazy(() => import("./components/OfferModal"));
-const ReviewModal = lazy(() => import("./components/ReviewModal"));
+// Import components directly to avoid lazy loading issues
+import { VerificationPrompt } from "./components/VerificationPrompt";
+import { AboutUs } from "./components/AboutUs";
+import { ContactUsPage } from "./components/ContactUsPage";
+import { FAQ } from "./components/FAQ";
+import { DealsManagement } from "./components/DealsManagement";
+import { OfferModal } from "./components/OfferModal";
+import { ReviewModal } from "./components/ReviewModal";
 
 // Optimized components
 import { AppHeader } from "./components/AppHeader";
@@ -59,6 +60,7 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import { useProducts } from "./hooks/useProducts";
 import { useChat } from "./hooks/useChat";
+import { useSeller } from "./hooks/useSeller";
 import { supabase } from "./lib/supabase";
 
 
@@ -70,7 +72,7 @@ import { useChatManagement } from "./hooks/useChatManagement";
 // Utility functions
 import { getSellerVerificationStatus, isSellerVerified } from "./utils/sellerVerification";
 
-import { Leaf, LogIn, UserPlus, ArrowRight, Sprout, Truck, ShoppingCart, ChevronLeft, Loader2 } from "lucide-react";
+import { Leaf, LogIn, UserPlus, ArrowRight, Sprout, Truck, ShoppingCart, ChevronLeft } from "lucide-react";
 
 // Loading component for lazy-loaded components
 const LoadingSpinner = () => (
@@ -215,6 +217,15 @@ const App = React.memo(() => {
   // Only initialize chat hook when user is authenticated
   const { startConversation } = useChat();
   
+  // Seller service for database operations
+  const { getSeller } = useSeller();
+  
+  // Seller data state for storefront
+  const [sellerData, setSellerData] = useState<any>(null);
+  const [sellerLoading, setSellerLoading] = useState(false);
+  
+  
+  
   // User cache for verification status - removed to fix white screen
   
   // No localStorage persistence needed with Supabase
@@ -337,6 +348,71 @@ const App = React.memo(() => {
   useEffect(() => {
     pagination.resetToFirstPage();
   }, [filters, pagination.resetToFirstPage]);
+
+  // Fetch seller data when selectedSellerId changes
+  useEffect(() => {
+    const fetchSellerData = async () => {
+      if (!selectedSellerId) {
+        setSellerData(null);
+        return;
+      }
+
+      setSellerLoading(true);
+      try {
+        // If it's the current user, use current user data
+        if (selectedSellerId === currentUser?.id && currentUser) {
+          const sellerInfo = {
+            id: currentUser.id,
+            name: currentUser.businessName || currentUser.name,
+            type: currentUser.userType,
+            accountType: currentUser.accountType,
+            location: currentUser.location,
+            description: currentUser.businessDescription || `${currentUser.userType} in ${currentUser.location}`,
+            image: currentUser.storefrontImage || "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop",
+            rating: (currentUser as any).rating || 0,
+            totalReviews: (currentUser as any).totalReviews || 0,
+            yearsActive: parseInt(currentUser.experience?.split(" ")[0] || "1"),
+            responseTime: (currentUser as any).responseTime || (currentUser.userType === "farmer" ? "3 hours" : "1 hour"),
+            certifications: currentUser.qualityCertifications || [],
+            joinedDate: (currentUser as any).joinedDate || "Recently",
+            verified: currentUser.verified || false,
+            businessVerified: currentUser.accountType === 'business' && currentUser.verified,
+            verificationStatus: currentUser.verificationStatus || 'not_started',
+            verificationSubmitted: currentUser.agriLinkVerificationRequested || false,
+            phone: currentUser.phone || "",
+            email: currentUser.email || "",
+            website: (currentUser as any).website || "",
+            facebook: (currentUser as any).facebook || "",
+            instagram: (currentUser as any).instagram || "",
+            telegram: (currentUser as any).telegram || "",
+            businessHours: (currentUser as any).businessHours || "9 AM - 6 PM, Mon-Sat",
+            specialties: (currentUser as any).specialties || [],
+            policies: (currentUser as any).policies || {
+              returns: "",
+              delivery: "",
+              payment: "",
+            },
+          };
+          setSellerData(sellerInfo);
+        } else {
+          // Fetch from database
+          const seller = await getSeller(selectedSellerId);
+          if (seller) {
+            setSellerData(seller);
+          } else {
+            setSellerData(null);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error fetching seller data:', error);
+        setSellerData(null);
+      } finally {
+        setSellerLoading(false);
+      }
+    };
+
+    fetchSellerData();
+  }, [selectedSellerId, currentUser, getSeller]);
 
   // Memoized selectors with null checks - optimized dependencies
   const selectedProduct = useMemo(
@@ -794,33 +870,27 @@ const App = React.memo(() => {
 
             {currentView === "about-us" && (
               <div className="max-w-4xl mx-auto">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <AboutUs
-                    onBack={navigation.handleBackToPrevious}
-                  />
-                </Suspense>
+                <AboutUs
+                  onBack={navigation.handleBackToPrevious}
+                />
               </div>
             )}
 
             {currentView === "contact-us" && (
               <div className="max-w-4xl mx-auto">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <ContactUsPage
-                    onBack={navigation.handleBackToPrevious}
-                    currentUser={currentUser}
-                  />
-                </Suspense>
+                <ContactUsPage
+                  onBack={navigation.handleBackToPrevious}
+                  currentUser={currentUser}
+                />
               </div>
             )}
 
             {currentView === "faq" && (
               <div className="max-w-4xl mx-auto">
-                <Suspense fallback={<LoadingSpinner />}>
-                  <FAQ
-                    onBack={navigation.handleBackToPrevious}
-                    onShowContactUs={navigation.handleShowContactUs}
-                  />
-                </Suspense>
+                <FAQ
+                  onBack={navigation.handleBackToPrevious}
+                  onShowContactUs={navigation.handleShowContactUs}
+                />
               </div>
             )}
 
@@ -967,9 +1037,7 @@ const App = React.memo(() => {
             )}
 
             {currentView === "product-details" &&
-              productToView && (
-                <Suspense fallback={<LoadingSpinner />}>
-                  {(() => {
+              productToView && (() => {
                 const productSellerVerificationStatus = productToView.sellerVerificationStatus || {
                   idVerified: false,
                   businessVerified: false,
@@ -1054,9 +1122,7 @@ const App = React.memo(() => {
                     sellerProfile={sellerProfile}
                   />
                 );
-                  })()}
-                </Suspense>
-              )}
+              })()}
 
             {currentView === "price-comparison" &&
               productToView && (
@@ -1073,83 +1139,13 @@ const App = React.memo(() => {
 
             {currentView === "seller-storefront" &&
               selectedSellerId && (
-                (() => {
-                // Get seller info - check current user first, then localStorage
-                let sellerInfo: any = null;
-                
-                if (selectedSellerId === currentUser?.id) {
-                  // Current user's storefront
-                  sellerInfo = {
-                    id: currentUser.id,
-                    name: currentUser.businessName || currentUser.name,
-                    type: currentUser.userType,
-                    accountType: currentUser.accountType,
-                    location: currentUser.location,
-                    description:
-                      currentUser.businessDescription ||
-                      `${currentUser.userType} in ${currentUser.location}`,
-                    image:
-                      (currentUser as any).storefrontImage ||
-                      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop",
-                    rating: (currentUser as any).rating || 0,
-                    totalReviews: (currentUser as any).totalReviews || 0,
-                    yearsActive: parseInt(currentUser.experience?.split(" ")[0] || "1"),
-                    responseTime: (currentUser as any).responseTime || (currentUser.userType === "farmer" ? "3 hours" : "1 hour"),
-                    certifications: currentUser.qualityCertifications || [],
-                    joinedDate: (currentUser as any).joinedDate || "Recently",
-                    verified: currentUser.verified || false,
-                    phone: currentUser.phone || "",
-                    email: currentUser.email || "",
-                    website: (currentUser as any).website || "",
-                    facebook: (currentUser as any).facebook || "",
-                    instagram: (currentUser as any).instagram || "",
-                    telegram: (currentUser as any).telegram || "",
-                    businessHours:
-                      (currentUser as any).businessHours || "9 AM - 6 PM, Mon-Sat",
-                    specialties: (currentUser as any).specialties || [],
-                    policies: (currentUser as any).policies || {
-                      returns: "",
-                      delivery: "",
-                      payment: "",
-                    },
-                  };
-                } else {
-                  // TODO: Look up seller from Supabase users table
-                  // For now, create a basic profile
-                  sellerInfo = {
-                    id: selectedSellerId,
-                    name: "Seller",
-                    type: "farmer",
-                    accountType: "individual",
-                    location: "Unknown",
-                    description: "Seller in Unknown",
-                    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=300&fit=crop",
-                    rating: 0,
-                    totalReviews: 0,
-                    yearsActive: 1,
-                    responseTime: "3 hours",
-                    certifications: [],
-                    joinedDate: "Recently",
-                    verified: false,
-                    phone: "",
-                    email: "",
-                    website: "",
-                    facebook: "",
-                    instagram: "",
-                    telegram: "",
-                    businessHours: "9 AM - 6 PM, Mon-Sat",
-                    specialties: [],
-                    policies: {
-                      returns: "",
-                      delivery: "",
-                      payment: "",
-                    },
-                  };
-                }
-
-                // If no seller found, show error message
-                if (!sellerInfo) {
-                  return (
+                <>
+                  {sellerLoading ? (
+                    <div className="text-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                      <p className="text-muted-foreground">Loading seller information...</p>
+                    </div>
+                  ) : !sellerData ? (
                     <div className="text-center py-12">
                       <p className="text-muted-foreground mb-4">
                         Seller not found.
@@ -1158,12 +1154,18 @@ const App = React.memo(() => {
                         Back to Marketplace
                       </Button>
                     </div>
-                  );
-                }
-
-                return (
+                  ) : (
+                    <>
+                      {/* Debug: Log seller info for storefront image debugging */}
+                      {process.env.NODE_ENV === 'development' && console.log('🔍 Storefront seller data:', {
+                        id: sellerData.id,
+                        name: sellerData.name,
+                        image: sellerData.image ? 'Has custom image' : 'Using fallback',
+                        imageUrl: sellerData.image
+                      })}
+                      
                   <SellerStorefront
-                    seller={sellerInfo}
+                        seller={sellerData}
                     products={allProducts.filter(
                       (p) => p.sellerId === selectedSellerId,
                     )}
@@ -1201,10 +1203,12 @@ const App = React.memo(() => {
                         ? setStorefrontPreviewMode
                         : undefined
                     }
-                  />
-                );
-                })()
+                      />
+                    </>
+                  )}
+                </>
               )}
+
           </div>
         </main>
 

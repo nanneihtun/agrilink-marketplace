@@ -4,6 +4,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Send, MapPin, Star, Shield, AlertTriangle, CheckCircle, Clock, User, X, Package, Handshake, DollarSign } from "lucide-react";
 import { useChat } from "../hooks/useChat";
@@ -109,6 +110,8 @@ export function ChatInterface({
     console.log('🔄 Conversation ID changed:', {
       conversationId,
       hasMessages: currentMessages.length > 0,
+      messageCount: currentMessages.length,
+      messages: currentMessages.map(m => ({ id: m.id, content: m.content.substring(0, 50) + '...' })),
       timestamp: new Date().toISOString()
     });
   }, [conversationId, currentMessages.length]);
@@ -188,7 +191,10 @@ export function ChatInterface({
           productId,
           sellerId,
           currentUserId: effectiveCurrentUser.id,
-          initialConversationId
+          currentUserType: effectiveCurrentUser.userType,
+          sellerType,
+          initialConversationId,
+          isCurrentUserSeller: effectiveCurrentUser.id === sellerId
         });
         
         setIsLoading(true);
@@ -197,7 +203,9 @@ export function ChatInterface({
           // Use existing conversation
           console.log('📱 Using existing conversation:', initialConversationId);
           setConversationId(initialConversationId);
+          console.log('🔄 Loading messages for conversation:', initialConversationId);
           await loadMessages(initialConversationId);
+          console.log('✅ Messages loaded for conversation:', initialConversationId);
         } else {
           // Check if conversation already exists in localStorage first
           try {
@@ -221,16 +229,9 @@ export function ChatInterface({
             console.warn('Could not check for existing conversations:', error);
           }
           
-          // Start new conversation
-          console.log('🆕 Starting new conversation');
-          // Determine if current user is buyer or seller
-          const isCurrentUserSeller = effectiveCurrentUser.id === sellerId;
-          const buyerId = isCurrentUserSeller ? sellerId : effectiveCurrentUser.id;
-          const actualSellerId = isCurrentUserSeller ? effectiveCurrentUser.id : sellerId;
-          
-          const conversation = await startConversation(buyerId, actualSellerId, productId);
-          console.log('✅ New conversation created:', conversation.id);
-          setConversationId(conversation.id);
+          // Don't create conversation yet - wait for first message
+          console.log('💬 Chat ready - conversation will be created when first message is sent');
+          setConversationId(null); // No conversation ID until first message
         }
       } catch (error) {
         console.error('❌ Failed to initialize chat:', error);
@@ -254,32 +255,49 @@ export function ChatInterface({
   }, [currentMessages, offers]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !conversationId || isLoading || !effectiveCurrentUser) {
+    if (!newMessage.trim() || isLoading || !effectiveCurrentUser) {
       console.log('⚠️ Cannot send message:', {
         hasMessage: !!newMessage.trim(),
-        hasConversationId: !!conversationId,
         hasEffectiveUser: !!effectiveCurrentUser,
         isLoading
       });
       return;
     }
 
-    // Store conversation ID to prevent it from being lost
-    const currentConversationId = conversationId;
-    
     const messageToSend = newMessage.trim();
-    console.log('📤 Sending message:', {
-      conversationId,
-      content: messageToSend,
-      sender: effectiveCurrentUser.name,
-      userId: effectiveCurrentUser.id
-    });
-    
     setNewMessage(''); // Clear immediately for better UX
     
     try {
       setIsLoading(true);
-      const sentMessage = await sendMessage(currentConversationId, messageToSend);
+      
+      let currentConversationId = conversationId;
+      
+      // Create conversation if it doesn't exist (first message)
+      if (!currentConversationId) {
+        console.log('🆕 Creating conversation for first message');
+        // Determine if current user is buyer or seller
+        const isCurrentUserSeller = effectiveCurrentUser.id === sellerId;
+        const buyerId = isCurrentUserSeller ? sellerId : effectiveCurrentUser.id;
+        const actualSellerId = isCurrentUserSeller ? effectiveCurrentUser.id : sellerId;
+        
+        const newConversation = await startConversation(buyerId, actualSellerId, productId);
+        if (newConversation) {
+          currentConversationId = newConversation.id;
+          setConversationId(currentConversationId);
+          console.log('✅ New conversation created:', currentConversationId);
+        } else {
+          throw new Error('Failed to create conversation');
+        }
+      }
+      
+      console.log('📤 Sending message:', {
+        conversationId: currentConversationId,
+        content: messageToSend,
+        sender: effectiveCurrentUser.name,
+        userId: effectiveCurrentUser.id
+      });
+      
+      const sentMessage = await sendMessage(currentConversationId, messageToSend, effectiveCurrentUser.id);
       console.log('✅ Message sent successfully:', sentMessage);
       
       // Temporarily disabled loadMessages to prevent duplicate issues
@@ -306,8 +324,8 @@ export function ChatInterface({
       
       // Additional check to ensure conversation ID is still valid
       console.log('🔍 Final conversation check:', {
-        conversationId: currentConversationId,
-        stillValid: !!currentConversationId,
+        conversationId: conversationId,
+        stillValid: !!conversationId,
         messageCount: currentMessages.length,
         timestamp: new Date().toISOString()
       });
@@ -524,23 +542,13 @@ export function ChatInterface({
           </div>
           <div className="flex gap-2">
             {canCreateOffer && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      size="sm" 
-                      className="h-9 bg-green-600 hover:bg-green-700"
-                      onClick={() => setShowCreateOffer(true)}
-                    >
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Make Offer
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Make an offer for this product</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button 
+                size="sm" 
+                className="h-9 w-9 bg-green-600 hover:bg-green-700"
+                onClick={() => setShowCreateOffer(true)}
+              >
+                <DollarSign className="w-4 h-4" />
+              </Button>
             )}
             <Button variant="outline" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -559,14 +567,14 @@ export function ChatInterface({
               : 'bg-yellow-50 border-yellow-200'
           }`}>
             <div className="flex items-start gap-2">
-              {!sellerVerificationStatus.trustLevel !== 'unverified' && (
+              {sellerVerificationStatus.trustLevel === 'unverified' && (
                 <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5" />
               )}
               {sellerVerificationStatus.trustLevel !== 'unverified' && (
                 <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
               )}
               <div className="flex-1">
-                {!sellerVerificationStatus.trustLevel !== 'unverified' && (
+                {sellerVerificationStatus.trustLevel === 'unverified' && (
                   <>
                     <p className="text-sm font-medium text-yellow-800">
                       Profile Not Confirmed
@@ -595,7 +603,7 @@ export function ChatInterface({
         )}
 
 
-        <ScrollArea ref={scrollAreaRef} className="h-[300px] p-4">
+        <ScrollArea ref={scrollAreaRef} className="h-[220px] p-4">
           <div className="space-y-4 pb-4">
             {isLoading && currentMessages.length === 0 && offers.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
@@ -608,33 +616,81 @@ export function ChatInterface({
             ) : (
               <>
                 {/* Messages */}
-                {currentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === effectiveCurrentUser?.id ? 'justify-end' : 'justify-start'}`}
-                  >
+                {currentMessages.map((message) => {
+                  const isOwnMessage = message.senderId === effectiveCurrentUser?.id;
+                  const senderName = isOwnMessage ? effectiveCurrentUser?.name : sellerName;
+                  const senderImage = isOwnMessage ? effectiveCurrentUser?.profileImage : product?.sellerProfileImage;
+                  
+                  // Debug logging for avatar issue
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('🔍 Message avatar debug:', {
+                      messageId: message.id,
+                      messageSenderId: message.senderId,
+                      currentUserId: effectiveCurrentUser?.id,
+                      isOwnMessage,
+                      senderName,
+                      expectedAvatar: senderName ? senderName.charAt(0).toUpperCase() : 'U'
+                    });
+                  }
+                  
+                  return (
                     <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.senderId === effectiveCurrentUser?.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                      key={message.id}
+                      className={`flex gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm">{message.content}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs opacity-70">{formatTimestamp(message.timestamp)}</p>
-                        {message.senderId === effectiveCurrentUser?.id && message.status && (
-                          <span className="text-xs opacity-70 ml-2">
-                            {message.status === 'sending' ? '⏳' : 
-                             message.status === 'sent' ? '✓' : 
-                             message.status === 'delivered' ? '✓✓' : 
-                             message.status === 'read' ? '✓✓' : ''}
-                          </span>
-                        )}
+                      {/* Profile Image - Only show for received messages */}
+                      {!isOwnMessage && (
+                        <div className="flex-shrink-0">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage
+                              src={senderImage || undefined}
+                              alt={senderName || 'User'}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {senderName ? senderName.charAt(0).toUpperCase() : 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )}
+                      
+                      <div
+                        className={`max-w-[80%] p-3 rounded-lg ${
+                          isOwnMessage
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs opacity-70">{formatTimestamp(message.timestamp)}</p>
+                          {isOwnMessage && message.status && (
+                            <span className="text-xs opacity-70 ml-2">
+                              {message.status === 'sending' ? '⏳' : 
+                               message.status === 'sent' ? '✓' : 
+                               message.status === 'delivered' ? '✓✓' : 
+                               message.status === 'read' ? '✓✓' : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      
+                      {/* Profile Image - Only show for sent messages */}
+                      {isOwnMessage && (
+                        <div className="flex-shrink-0">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage
+                              src={senderImage || undefined}
+                              alt={senderName || 'User'}
+                            />
+                            <AvatarFallback className="text-xs">
+                              {senderName ? senderName.charAt(0).toUpperCase() : 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {/* Display Offers - Compact Layout */}
                 {offers.length > 0 && (
@@ -657,54 +713,6 @@ export function ChatInterface({
             )}
           </div>
         </ScrollArea>
-        
-        {/* Debug: Offer Management (Development Only) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="flex-shrink-0 p-2 border-t bg-gray-50 border-gray-200">
-            <div className="flex gap-2 justify-between items-center">
-              <div className="text-xs text-gray-600">
-                Dev Tools: {offers.length} offers loaded
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    console.log('🔍 Current Offers Debug:', {
-                      totalOffers: offers.length,
-                      offers: offers.map(o => ({
-                        id: o.id.slice(-8),
-                        seller: o.sellerName,
-                        buyer: o.buyerName,
-                        sellerId: o.sellerId,
-                        buyerId: o.buyerId,
-                        status: o.status
-                      })),
-                      currentUser: effectiveCurrentUser?.name,
-                      currentUserId: effectiveCurrentUser?.id,
-                      sellerId,
-                      productId
-                    });
-                  }}
-                  className="text-xs text-blue-600 border-blue-300 hover:bg-blue-100"
-                >
-                  🔍 Debug Offers
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setOffers([]);
-                    toast.success('Offers cleared from view');
-                  }}
-                  className="text-xs text-red-600 border-red-300 hover:bg-red-100"
-                >
-                  🗑️ Clear View
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Message Input - Always present, never conditionally rendered */}
         <div className="flex-shrink-0 p-4 border-t bg-card">
@@ -720,7 +728,7 @@ export function ChatInterface({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              disabled={isLoading || !conversationId || !effectiveCurrentUser}
+              disabled={isLoading || !effectiveCurrentUser}
               className="flex-1"
               autoComplete="off"
               maxLength={1000}
@@ -728,7 +736,7 @@ export function ChatInterface({
             <Button 
               onClick={handleSendMessage} 
               size="sm"
-              disabled={isLoading || !conversationId || !newMessage.trim() || !effectiveCurrentUser}
+              disabled={isLoading || !newMessage.trim() || !effectiveCurrentUser}
               className="shrink-0"
             >
               {isLoading ? (
@@ -741,7 +749,12 @@ export function ChatInterface({
           
           {/* Status Messages */}
           <div className="mt-2 space-y-1">
-            {!conversationId && effectiveCurrentUser && (
+            {!conversationId && effectiveCurrentUser && !isLoading && (
+              <p className="text-xs text-muted-foreground text-center">
+                Ready to chat - type a message to start the conversation
+              </p>
+            )}
+            {isLoading && (
               <p className="text-xs text-muted-foreground text-center">
                 Setting up conversation...
               </p>
@@ -752,15 +765,6 @@ export function ChatInterface({
               </p>
             )}
             
-            {/* Debug: Show conversation state */}
-            {process.env.NODE_ENV === 'development' && (
-              <p className="text-xs text-gray-500 text-center">
-                ConvID: {conversationId ? conversationId.slice(-8) : 'null'} | 
-                User: {effectiveCurrentUser?.name || 'none'} | 
-                Loading: {isLoading.toString()} |
-                Offers: {offers.length}
-              </p>
-            )}
           </div>
         </div>
       </CardContent>
